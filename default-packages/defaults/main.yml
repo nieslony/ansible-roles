@@ -1,0 +1,13 @@
+# defaults file for default-packages
+default_packages:
+    - bash-completion
+    - bind-utils
+    - langpacks-de
+    - langpacks-it
+    - lsof
+    - net-tools
+    - pciutils
+    - rsync
+    - tar
+    - telnet
+    - usbutils
