@@ -1,0 +1,15 @@
+# tasks file for autofs
+- name: Configure autofs.conf
+  ini_file:
+    path: /etc/autofs.conf
+    section: " autofs "
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  with_dict: "{{ autofs_options }}"
+  notify: Restart autofs
+
+- name: Start and enable autofs
+  service:
+    name: autofs
+    enabled: yes
+    state: started

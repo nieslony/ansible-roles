@@ -1,0 +1,7 @@
+# defaults file for autofs
+autofs_options:
+    browse_mode: "yes"
+    timeout: "60"
+    mount_nfs_default_protocol: "4"
+
+autofs_location: default
