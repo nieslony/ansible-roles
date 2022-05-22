@@ -1,0 +1,84 @@
+# tasks file for 802.1x_Network
+
+- name: "Create certificate folder"
+  file:
+    path: "{{ cert_folder }}"
+    state: directory
+    mode: 0700
+
+- name: Check for secret file
+  stat:
+    path: "{{ cert_private_key_password_file }}"
+  register: stat_password_file
+
+- name: Generate password file
+  copy:
+    dest: "{{ cert_private_key_password_file }}"
+    content: "{{ lookup('password', '/dev/null chars=ascii_letters,digits') }}"
+  when: not stat_password_file.stat.exists
+
+- name: Slurp secret
+  slurp:
+    src: "{{ cert_private_key_password_file }}"
+  register: slurped_secret
+
+- set_fact:
+    secret: "{{ slurped_secret['content'] | b64decode }}"
+
+- name: Get SSL certificate
+  command:
+    cmd: |
+        ipa-getcert request
+            --keyfile  {{ cert_private_key_path }}
+            --certfile {{ cert_path }}
+            --pinfile  {{ cert_private_key_password_file }}
+            --wait
+    creates: "{{ cert_path }}"
+
+- name: Find connection
+  command: "nmcli con show {{ connection_name }}"
+  register: find_connection
+  ignore_errors: yes
+
+- name: Create connection
+  command: |
+    nmcli connection add
+        con-name {{ connection_name }}
+        type wifi
+        ssid {{ connection_ssid }}
+  when: find_connection.rc ==  10
+
+- name: Get NM connection options
+  shell: |
+    nmcli --show-secrets con show {{ connection_name }} \
+        | awk -F ": +" '
+            BEGIN { print "{"; }
+            END { print "\"x\": \"\"}"; }
+            { print "\"" $1 "\": \"" $2 "\","; }
+            '
+  register: nmcli_con_sh
+  changed_when: False
+
+- set_fact:
+    nmcli_opts: "{{ nmcli_con_sh.stdout | from_json }}"
+    nmcli_mod_options: []
+
+- name: Gather nmcli modifications
+#  shell: "nmcli con mod {{ connection_name }} {{ item.key }} '{{ item.value }}'"
+  set_fact:
+    nmcli_mod_options: "{{ nmcli_mod_options + [ item.key, item.value ] }}"
+  when: nmcli_opts | json_query('\"' + item.key + '\"') != item.value
+  with_items:
+    - { key: "802-11-wireless-security.key-mgmt", value: "wpa-eap" }
+    - { key: "802-1x.eap", value: "tls" }
+    - { key: "802-1x.identity", value: "{{ ansible_fqdn }}" }
+    - { key: "802-1x.ca-cert", value: "/etc/ipa/ca.crt" }
+    - { key: "802-1x.client-cert", value: "{{ cert_path  }}" }
+    - { key: "802-1x.private-key", value: "{{ cert_private_key_path }}" }
+    - { key: "802-1x.private-key-password", value: "{{ secret }}" }
+
+- name: Change network connection
+  command: |
+    nmcli connection modify {{ connection_name }}
+        {{ nmcli_mod_options | join(' ') }}
+  when: nmcli_mod_options | length > 0
