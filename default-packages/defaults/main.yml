@@ -6,6 +6,7 @@ default_packages:
     - langpacks-it
     - lsof
     - net-tools
+    - openldap-clients
     - pciutils
     - rsync
     - tar
