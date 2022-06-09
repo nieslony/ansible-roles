@@ -1,26 +1,26 @@
 # tasks file for thunderbird
-- name: Install thunderbird
+- name: "thunderbird: Install thunderbird"
   package:
     name: thunderbird
     state: latest
 
-- name: Install thunderbird user-attribute getter
+- name: "thunderbird: Install thunderbird user-attribute getter"
   copy:
     src: thunderbird-user-attrs.sh
     dest: /usr/local/bin
     mode: u=rwx,g=rx,o=rx
 
-- name: Install thunderbird-autoconf.js
+- name: "thunderbird: Install thunderbird-autoconf.js"
   copy:
     src: thunderbird-autoconf.js
     dest: /usr/lib64/thunderbird/defaults/pref/
 
-- name: Install thunderbird-default.cfg
+- name: "thunderbird: Install thunderbird-default.cfg"
   template:
     src: thunderbird-default.cfg
     dest: /usr/lib64/thunderbird/
 
-- name: Install Thunderbird user-attribute .desktop file
+- name: "thunderbird: Install Thunderbird user-attribute .desktop file"
   copy:
     src: thunderbird-user-attrs.desktop
     dest: /etc/xdg/autostart
