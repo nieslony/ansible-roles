@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Create Thunderbird default configuration
+NoDisplay=true
+Exec=/usr/local/bin/thunderbird-user-attrs.sh

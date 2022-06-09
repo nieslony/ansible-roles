@@ -1,0 +1,20 @@
+# defaults file for thunderbird
+
+imap_server: "mail.{{ ansible_domain }}"
+imap_port: 143
+
+smtp_server: "mail.{{ ansible_domain }}"
+smtp_port: 587
+
+ldap_server: "ldap.{{ ansible_domain }}"
+ldap_port: 389
+# domain "example.com" -> "dc=example,dc=com"
+ldap_base_dn: "{{
+    ansible_domain.split('.') |
+    map('regex_replace', '^', 'dc=') |
+    list |
+    join(',')
+    }}"
+ldap_users_dn: "cn=users,cn=accounts"
+
+organization: "{{ foreman['organization'] }}"
