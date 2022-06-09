@@ -1,0 +1,93 @@
+---
+# tasks file for webserver
+- name: Create logocal volume
+  block:
+    - name: Create volume
+      lvol:
+        vg: "{{ lvm_volgroup }}"
+        lv: "{{ lvm_volume }}"
+        size: "{{ lvm_volsize_gb }}"
+
+    - name: Create filesystem
+      filesystem:
+        fstype: xfs
+        dev: "/dev/{{ lvm_volgroup }}/{{ lvm_volume }}"
+
+    - name: Mount file system
+      mount:
+        path: /var/www
+        src: "/dev/{{ lvm_volgroup }}/{{ lvm_volume }}"
+        state: mounted
+  when: lvm_volsize_gb > 0
+
+- name: "Install packages: {{ packages | join(', ') }}"
+  package:
+    name: "{{ packages }}"
+    state: latest
+
+- name: Create service
+  ipa_service:
+    name: "HTTP/{{ ansible_fqdn }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+
+- block:
+    - name: Create credential cache
+      command: kinit -k
+      changed_when: false
+
+    - name: Get keytab
+      command:
+        cmd: "ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }}"
+        creates: "{{ keytab }}"
+
+    - name: Get SSL certificate
+      command:
+        cmd: "ipa-getcert request -k {{ ssl_key }} -f {{ ssl_cert }} --wait"
+        creates: "{{ ssl_cert }}"
+  always:
+    - name: Destroy credential cache
+      command: kdestroy
+      changed_when: false
+
+- name: "Change owner of {{ keytab }} owner: apache"
+  file:
+    path: "{{ keytab }}"
+    owner: apache
+
+- name: "Change owner of {{ ssl_key }} owner: apache"
+  file:
+    path: "{{ ssl_key }}"
+    owner: apache
+
+- name: Set ssl key in apache config
+  lineinfile:
+    path: /etc/httpd/conf.d/ssl.conf
+    regexp: "^#* *SSLCertificateKeyFile "
+    line: "SSLCertificateKeyFile {{ ssl_key }}"
+
+- name: Set ssl cert in apache config
+  lineinfile:
+    path: /etc/httpd/conf.d/ssl.conf
+    regexp: "^#* *SSLCertificateFile "
+    line: "SSLCertificateFile {{ ssl_cert }}"
+
+- name: Copy default_vhost.conf
+  copy:
+    src: default_vhost.conf
+    dest: /etc/httpd/conf.d/default_vhost.conf
+
+- name: Open http/https in firewall
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+  with_items:
+    - http
+    - https
+
+- name: Enable and start httpd
+  service:
+    name: httpd
+    enabled: yes
+    state: started
