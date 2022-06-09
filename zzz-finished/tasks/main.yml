@@ -1,0 +1,16 @@
+# tasks file for zzz-finished
+- name: Finished on Console
+  shell: 'echo -e "\n-----------\nConfiguration successfully finished\n-----------\n" > /dev/console'
+  changed_when: False
+
+- name: Check default target
+  stat:
+    path: /etc/systemd/system/default.target
+  register: default_target
+
+- name: Start GUI if default target is graphical
+  service:
+    name: gdm
+    state: started
+  when: default_target.stat.islnk and default_target.stat.lnk_source == "/usr/lib/systemd/system/graphical.target"
+  changed_when: False
