@@ -1,0 +1,58 @@
+- set_fact:
+    mail_server: >-
+        {%-
+              if mail_server is not defined
+                or mail_server | type_debug == 'NoneType'
+                or mail_server == ''
+        -%}
+            {%- set mx = lookup(
+                'community.general.dig',
+                '{{ ansible_domain }}./MX',
+                'flat=0',
+                wantlist=True
+                ) | first
+            -%}
+            {{ mx.exchange[:-1] }}
+        {%- else -%}
+            {{ mail_server }}
+        {%- endif -%}
+
+    ldap_servers: >-
+        {%-
+              if ldap_servers is not defined
+                or ldap_servers | type_debug == 'NoneType'
+                or ldap_servers == ''
+        -%}
+            {%- set tmp = [] -%}
+            {%- for item in
+                lookup(
+                    'community.general.dig',
+                    '_ldap._tcp.{{ ansible_domain }}./SRV',
+                    'flat=0',
+                    wantlist=True
+                ) | sort(attribute='priority')
+            -%}
+                {%- set _ =
+                    tmp.append('ldap://' + item.target[:-1] + ':' + item.port|string)
+                -%}
+            {%- endfor -%}
+            {{ tmp }}
+        {%- else -%}
+            {{ ldap_servers }}
+        {%- endif -%}
+
+    ldap_base_dn: >-
+        {%-
+              if ldap_servers is not defined
+                or ldap_servers | type_debug == 'NoneType'
+                or ldap_servers == ''
+        -%}
+            {{
+                ansible_domain.split('.') |
+                    map('regex_replace', '^', 'dc=') |
+                    list |
+                    join(',')
+            }}
+        {%- else -%}
+            {{ ldap_base_dn }}
+        {%- endif -%}
