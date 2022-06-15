@@ -1,0 +1,66 @@
+- name: "certificates : Install certificates certificates issued by ipa"
+  block:
+    - name: "certificates : Create certificates folder"
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+       - "{{ postfix_certs_folder }}"
+       - "{{ cyrus_imapd_certs_folder }}"
+
+    - name: "certificates : Get SSL certificate for postfix"
+      command:
+        cmd: |
+            ipa-getcert request
+                --keyfile {{ postfix_cert_key_file }}
+                --certfile {{ postfix_cert_file }}
+                --key-owner postfix
+                --cert-owner postfix
+                --wait
+        creates: "{{ postfix_cert_file }}"
+      environment:
+        KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+
+    - name: "certificates : Get SSL certificate for cyrus-imap"
+      command:
+        cmd: |
+            ipa-getcert request
+                --keyfile {{ cyrus_imapd_cert_key_file }}
+                --certfile {{ cyrus_imapd_cert_file }}
+                --key-owner cyrus
+                --cert-owner cyrus
+                --wait
+        creates: "{{ cyrus_imapd_cert_file }}"
+      environment:
+        KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+
+    - name: "certificates : Enable certificates for postfix"
+      command: "postconf -e '{{ item.key }} = {{ item.value }}'"
+      loop: "{{ options | dict2items }}"
+      vars:
+        options:
+            smtpd_tls_cert_file: "{{ postfix_cert_file }}"
+            smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
+      changed_when: false
+
+    - name: Symlink cert for cyrus-imapd
+      file:
+        path: "{{ item.path }}"
+        src: "{{ item.src }}"
+        state: link
+      loop:
+        - path: /etc/pki/cyrus-imapd/cyrus-imapd.pem
+          src: "{{ cyrus_imapd_cert_file }}"
+        - path: /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
+          src: "{{ cyrus_imapd_cert_key_file }}"
+        - path: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+          src: /etc/ipa/ca.crt
+
+  vars:
+    postfix_certs_folder: /etc/pki/postfix
+    postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
+    postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
+    cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
+    cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
+    cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
+  when: certs_issued_by == "ipa"

@@ -1,0 +1,84 @@
+# defaults file for nextcloud
+myhostname: "{{ ansible_fqdn }}"
+mydomain: "{{ ansible_domain }}"
+
+logical_volumes:
+  - { name: "var", size: "4G", mount_point: /var }
+  - { name: "var_spool_imap", size: "5G", mount_point: /var/spool/imap }
+  - { name: "var_lib_imap", size: "2G", mount_point: /var/lib/imap }
+
+vg_name: system
+
+certs_issued_by: ipa
+# certs_issued_by: letsencrypt
+
+master_cfg_opts:
+    submission_inet:
+        syslog_name: "postfix/submission"
+        smtpd_tls_security_level: "encrypt"
+        smtpd_tls_wrappermode: "no"
+        smtpd_tls_loglevel: "1"
+        smtpd_sasl_auth_enable: "yes"
+        smtpd_relay_restrictions: "permit_sasl_authenticated,reject"
+        smtpd_recipient_restrictions: "permit_mynetworks,permit_sasl_authenticated,reject"
+        smtpd_sasl_path: "private/auth"
+
+main_cfg_opts:
+    myhostname: "{{ myhostname }}"
+    mydomain: "{{ mydomain }}"
+    inet_interfaces: all
+
+imapd_conf_opts:
+    sasl_keytab: "/etc/cyrus-krb5.keytab"
+    sasl_mech_list: "gssapi"
+    autocreate_inbox_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
+    autocreate_subscribe_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
+    autocreate_post: "1"
+    autocreate_quota: "1048576"
+    serverinfo: "off"
+    xlist-archive: "Archives"
+    xlist-drafts: "Drafts"
+    xlist-junk: "Junk"
+    xlist-sent: "Sent"
+    xlist-trash: "Trash"
+
+packages_common:
+    - cyrus-sasl
+    - cyrus-sasl-gssapi
+    - cyrus-sasl-ldap
+    - python3-urllib-gssapi
+
+packages_amavis:
+    - amavis
+    - arj
+    - bzip2
+    - certbot
+    - clamav
+    - clamav-data
+    - clamav-lib
+    - clamav-update
+    - cpio
+    - file
+    - gzip
+    - lrzsz
+    - lz4
+    - lzip
+    - lzop
+    - nomarch
+    - p7zip
+    - perl-Getopt-Long
+    - spax
+    - unrar
+    - unzip
+    - zip
+
+packages_cyrus_imapd:
+    - cyrus-imapd-utils
+    - cyrus-imapd
+    - cyrus-imapd-vzic
+
+packages_postfix:
+    - mailx
+    - postfix
+    - postfix-ldap
+    - opendkim

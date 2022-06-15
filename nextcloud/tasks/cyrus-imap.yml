@@ -1,0 +1,87 @@
+- name: "cyrus-imapd : Install Packages"
+  package:
+    name: "{{ packages_cyrus_imapd }}"
+    state: latest
+
+- name: "cyrus-imapd : Disable unused services"
+  lineinfile:
+    path: /etc/cyrus.conf
+    regexp: '^(\s*)({{ item }}\s+.*)'
+    line: '\1## q\2'
+    backrefs: yes
+  loop:
+    - imaps
+    - pop3
+    - pop3s
+    - http
+    - https
+  notify: Restart cyrus-imapd
+
+- name: "cyrus-imapd : Enable services"
+  lineinfile:
+    path: /etc/cyrus.conf
+    regexp: '^(\s*)#+(\s*)idled(\s*.*)'
+    line: '\1\2idled\3'
+    backrefs: yes
+
+- name: "cyrus-imapd : Configure imapd.conf"
+  lineinfile:
+    path: /etc/imapd.conf
+    regexp: '^\s*#?\s*({{ item.key }}):'
+    line: "{{ item.key }}: {{ item.value }}"
+    state: present
+  loop: "{{ imapd_conf_opts | dict2items }}"
+
+- name: "cyrus-imapd : Enable cyrus imapd in master.cf"
+  command:
+    cmd: >
+        postconf -Me cyrus/unix="cyrus unix - n n - - pipe
+        user=cyrus argv=/usr/lib/cyrus-imapd/deliver
+        -e
+        -r ${sender}
+        -m ${extension} ${user}
+        "
+  changed_when: false
+
+- name: "cyrus-imapd : Modify main.cf"
+  command: >
+    postconf -e '{{ item.key }} = {{ item.value }}'
+  loop: "{{ opts | dict2items }}"
+  vars:
+    opts:
+      mailbox_transport: cyrus
+      cyrus_destination_recipient_limit: 1
+      relay_domains: "{{ mydomain }}"
+
+
+- name: "cyrus-imapd : Create services"
+  ipa_service:
+    name: "{{ item }}/{{ ansible_fqdn }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+  loop:
+    - imap
+    - sieve
+
+- name: "cyrus-imapd : Get keytab for imap"
+  block:
+    - name: "cyrus-imapd : Get kerberos credentials"
+      command: kinit -k
+      changed_when: false
+
+    - name: "cyrus-imapd : Get keytab"
+      command:
+        cmd: "ipa-getkeytab -p {{ item }}/{{ ansible_fqdn }} -k /etc/cyrus-krb5.keytab"
+        creates: /etc/cyrus-krb5.keytab
+      loop:
+        - imap
+        - sieve
+  always:
+    - name: Destroy credential cache
+      command: kdestroy
+      changed_when: false
+
+- name: "cyrus-imapd : Change owner of cyrus-imapd keytab"
+  file:
+    path: /etc/cyrus-krb5.keytab
+    owner: cyrus

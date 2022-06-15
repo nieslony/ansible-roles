@@ -1,0 +1,10 @@
+# handlers file for nextcloud
+- name: Restart postfix
+  service:
+    name: postfix
+    state: restarted
+
+- name: Restart cyrus-imapd
+  service:
+    name: cyrus-imapd
+    state: restarted

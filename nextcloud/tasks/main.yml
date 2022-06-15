@@ -1,0 +1,109 @@
+# tasks file for nextcloud
+
+# https://www.linuxbabe.com/mail-server/postfix-send-only-smtp-server-centos-8
+# https://www.linuxbabe.com/mail-server/amavis-clamav-centos-8-rhel-8
+# https://dokuwiki.nausch.org/doku.php/centos:mailserver:der_cyrus_imap-server
+# https://www.ipv1001.it/deploying-postfix-with-ldap-freeipa-virtual-aliases-and-kerberos-authentication/?lang=en
+
+
+# https://www.telecom-sudparis.eu/s2ia/user/procacci/netscape/en/mozilla-autoconfig-en.html
+
+##############################################################################
+# prolog
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- name: Resize volumes
+  lvol:
+    vg: "{{ vg_name }}"
+    lv: "{{ item.name }}"
+    size: "{{ item.size }}"
+    resizefs: yes
+  loop: "{{ logical_volumes }}"
+
+- name: Create filesystems
+  filesystem:
+    fstype: xfs
+    dev: "/dev/{{ vg_name }}/{{ item.name }}"
+  loop: "{{ logical_volumes }}"
+
+- name: Mount filesystems
+  mount:
+    path: "{{ item.mount_point }}"
+    src: "/dev/{{ vg_name }}/{{ item.name }}"
+    fstype: xfs
+    state: mounted
+  loop: "{{ logical_volumes }}"
+
+- name: "Install packages"
+  dnf:
+    name: "{{ packages_common + packages_postfix + packages_cyrus_imapd }}"
+    state: latest
+
+##############################################################################
+# Get configuration checksum
+- name: Get status of postfix/main.cf
+  stat:
+    path: /etc/postfix/main.cf
+  register: stat_main_cf_pre
+
+- name: Get status of postfix/maister.cf
+  stat:
+    path: /etc/postfix/master.cf
+  register: stat_master_cf_pre
+
+- name: Get status of imapd.conf
+  stat:
+    path: /etc/imapd.conf
+  register: stat_imapd_conf_pre
+
+##############################################################################
+# Run tasks
+- import_tasks: postfix.yml
+- import_tasks: cyrus-imap.yml
+- import_tasks: certificates.yml
+
+##############################################################################
+# Get configuration checksum and compare
+- name: Get status of postfix/main.cf
+  stat:
+    path: /etc/postfix/main.cf
+  register: stat_main_cf_post
+  changed_when: stat_main_cf_pre.stat.checksum != stat_main_cf_post.stat.checksum
+  notify: Restart postfix
+
+- name: Get status of postfix/maister.cf
+  stat:
+    path: /etc/postfix/master.cf
+  register: stat_master_cf_post
+  changed_when: stat_master_cf_pre.stat.checksum != stat_master_cf_post.stat.checksum
+  notify: Restart postfix
+
+- name: Get status of imapd.conf
+  stat:
+    path: /etc/imapd.conf
+  register: stat_imapd_conf_post
+  changed_when: stat_imapd_conf_pre.stat.checksum != stat_imapd_conf_post.stat.checksum
+  notify: Restart cyrus-imapd
+
+- name: Start services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - postfix
+    - saslauthd
+    - cyrus-imapd
+
+- name: Open firewall
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - smtp
+    - smtp-submission
+    - imap
+    - managesieve

@@ -1,0 +1,54 @@
+- name: "postfix : Configure postfix"
+  command: "postconf -e '{{ item.key }} = {{ item.value }}'"
+  loop: "{{ main_cfg_opts | dict2items }}"
+  changed_when: false
+
+- name: "postfix : Enable submission service"
+  command:
+    cmd: >
+        postconf -Me submission/inet="
+        submission inet n - y - - smtpd -o
+        {{
+            master_cfg_opts.submission_inet.keys()
+                | zip(master_cfg_opts.submission_inet.values())
+                | map('join', '=')
+                | join(' -o ')
+        }}
+        "
+  changed_when: false
+
+- name: "postfix : Create service smtp/{{ ansible_fqdn }}"
+  ipa_service:
+    name: "smtp/{{ ansible_fqdn }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+
+- name: "postfix : Get keytab for smtp"
+  block:
+    - name: "postfix : Get kerberos credentials"
+      command: kinit -k
+      changed_when: false
+
+    - name: "postfix : Get keytab"
+      command:
+        cmd: "ipa-getkeytab -p smtp/{{ ansible_fqdn }} -k /etc/postfix/krb5.keytab"
+        creates: /etc/postfix/krb5.keytab
+  always:
+    - name: Destroy credential cache
+      command: kdestroy
+      changed_when: false
+
+- name: "postfix : Change owner of postfix keytab"
+  file:
+    path: /etc/postfix/krb5.keytab
+    owner: postfix
+
+- name: Install virtual_ldap
+  template:
+    src: virtual_ldap
+    dest: /etc/postfix
+
+- name: "postfix : Configure saslauthd"
+  copy:
+    src: smtpd.conf
+    dest: /etc/sasl2
