@@ -1,0 +1,59 @@
+---
+# tasks file for cockpit
+- name: Install packages
+  package:
+    name:
+      - cockpit
+#      - cockpit-navigator
+      - cockpit-networkmanager
+      - cockpit-packagekit
+      - cockpit-pcp
+      - cockpit-selinux
+      - cockpit-storaged
+      - cockpit-system
+      - cockpit-ws
+      - python3-urllib-gssapi
+      - subscription-manager-cockpit
+    state: present
+
+- name: Get SSL certificate
+  command:
+    cmd: "ipa-getcert request -k {{ ssl_key }} -f {{ ssl_cert }} --wait"
+    creates: "{{ ssl_cert }}"
+
+- name: Create folder /etc/httpd
+  file:
+    path: /etc/httpd
+    state: directory
+
+- name: Create service
+  ipa_service:
+    name: "HTTP/{{ ansible_fqdn }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+
+- name: "Get keytab {{ keytab }}"
+  shell:
+    cmd: |
+        kinit -k
+        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }}
+        kdestroy
+    creates: "{{ keytab }}"
+
+- name: Symlink keytab
+  file:
+    state: link
+    dest: /etc/cockpit/krb5.keytab
+    src: /etc/httpd/krb5.keytab
+
+- name: Start cockpit
+  service:
+    name: cockpit.socket
+    enabled: yes
+    state: started
+
+- name: Open cockpit firewalld
+  firewalld:
+    service: cockpit
+    permanent: yes
+    state: enabled
