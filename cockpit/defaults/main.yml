@@ -1,2 +1,5 @@
 ---
 # defaults file for cockpit
+keytab: /etc/httpd/krb5.keytab
+ssl_cert: "/etc/cockpit/ws-certs.d/10-{{ ansible_fqdn }}.crt"
+ssl_key:  "/etc/cockpit/ws-certs.d/10-{{ ansible_fqdn }}.key"
