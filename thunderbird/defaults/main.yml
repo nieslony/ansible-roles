@@ -17,4 +17,4 @@ ldap_base_dn: "{{
     }}"
 ldap_users_dn: "cn=users,cn=accounts"
 
-organization: "{{ foreman['organization'] }}"
+organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
