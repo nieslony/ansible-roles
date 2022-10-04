@@ -1,6 +1,6 @@
 # defaults file for nextcloud
 myhostname: "{{ ansible_fqdn }}"
-mydomain: "{{ ansible_domain }}"
+mydomain: "{{ maildomain if maildomain is defined else ansible_domain }}"
 
 logical_volumes:
   - { name: "var", size: "4G", mount_point: /var }
@@ -16,17 +16,24 @@ master_cfg_opts:
     submission_inet:
         syslog_name: "postfix/submission"
         smtpd_tls_security_level: "encrypt"
-        smtpd_tls_wrappermode: "no"
         smtpd_tls_loglevel: "1"
+        smtpd_sasl_authenticated_header: "yes"
         smtpd_sasl_auth_enable: "yes"
-        smtpd_relay_restrictions: "permit_sasl_authenticated,reject"
-        smtpd_recipient_restrictions: "permit_mynetworks,permit_sasl_authenticated,reject"
-        smtpd_sasl_path: "private/auth"
+        smtpd_client_restrictions: permit_sasl_authenticated,reject
 
 main_cfg_opts:
     myhostname: "{{ myhostname }}"
     mydomain: "{{ mydomain }}"
-    inet_interfaces: all
+    mydestination:
+      - "$myhostname"
+      - "$mydomain"
+    inet_interfaces: "all"
+    smtpd_sasl_response_limit: "65536"
+    import_environment:
+      - KRB5_KTNAME=/etc/postfix/krb5.keytab
+      - KRB5_CLIENT_KTNAME=/etc/postfix/krb5.keytab
+    virtual_alias_maps:
+      - "ldap:/etc/postfix/virtual_ldap"
 
 imapd_conf_opts:
     sasl_keytab: "/etc/cyrus-krb5.keytab"
@@ -45,7 +52,6 @@ imapd_conf_opts:
 packages_common:
     - cyrus-sasl
     - cyrus-sasl-gssapi
-    - cyrus-sasl-ldap
     - python3-urllib-gssapi
 
 packages_amavis:

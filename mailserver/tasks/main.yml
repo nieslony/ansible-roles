@@ -13,27 +13,29 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: Resize volumes
-  lvol:
-    vg: "{{ vg_name }}"
-    lv: "{{ item.name }}"
-    size: "{{ item.size }}"
-    resizefs: yes
-  loop: "{{ logical_volumes }}"
+- block:
+  - name: Resize volumes
+    lvol:
+        vg: "{{ vg_name }}"
+        lv: "{{ item.name }}"
+        size: "{{ item.size }}"
+        resizefs: yes
+    loop: "{{ logical_volumes }}"
 
-- name: Create filesystems
-  filesystem:
-    fstype: xfs
-    dev: "/dev/{{ vg_name }}/{{ item.name }}"
-  loop: "{{ logical_volumes }}"
+  - name: Create filesystems
+    filesystem:
+        fstype: xfs
+        dev: "/dev/{{ vg_name }}/{{ item.name }}"
+    loop: "{{ logical_volumes }}"
 
-- name: Mount filesystems
-  mount:
-    path: "{{ item.mount_point }}"
-    src: "/dev/{{ vg_name }}/{{ item.name }}"
-    fstype: xfs
-    state: mounted
-  loop: "{{ logical_volumes }}"
+  - name: Mount filesystems
+    mount:
+        path: "{{ item.mount_point }}"
+        src: "/dev/{{ vg_name }}/{{ item.name }}"
+        fstype: xfs
+        state: mounted
+    loop: "{{ logical_volumes }}"
+  when: ansible_lvm.vgs.system is defined
 
 - name: "Install packages"
   dnf:
@@ -95,6 +97,7 @@
     - postfix
     - saslauthd
     - cyrus-imapd
+    - firewalld
 
 - name: Open firewall
   firewalld:

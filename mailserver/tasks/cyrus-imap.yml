@@ -59,6 +59,8 @@
     name: "{{ item }}/{{ ansible_fqdn }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
   loop:
     - imap
     - sieve

@@ -3,8 +3,9 @@ search_base = {{ ldap_base_dn }}
 start_tls = yes
 version = 3
 
-query_filter = (&(objectclass=inetuser)(mail=%s))
+query_filter = (&(objectclass=mailGroup)(mail=%s))
 result_attribute = uid
+special_result_attribute = member
 
 bind = sasl
 sasl_mechs = gssapi
