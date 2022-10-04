@@ -4,6 +4,7 @@ default_packages:
     - bind-utils
     - langpacks-de
     - langpacks-it
+    - lvm2
     - lsof
     - net-tools
     - openldap-clients
