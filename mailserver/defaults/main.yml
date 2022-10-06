@@ -1,6 +1,7 @@
 # defaults file for nextcloud
 myhostname: "{{ ansible_fqdn }}"
 mydomain: "{{ maildomain if maildomain is defined else ansible_domain }}"
+organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
 
 logical_volumes:
   - { name: "var", size: "4G", mount_point: /var }
@@ -29,6 +30,7 @@ main_cfg_opts:
       - "$mydomain"
     inet_interfaces: "all"
     smtpd_sasl_response_limit: "65536"
+    line_length_limit: "65536"
     import_environment:
       - KRB5_KTNAME=/etc/postfix/krb5.keytab
       - KRB5_CLIENT_KTNAME=/etc/postfix/krb5.keytab
