@@ -46,12 +46,12 @@
     path: /etc/postfix/krb5.keytab
     owner: postfix
 
-- name: Install virtual_ldap
+- name: "postfix : Install virtual_ldap"
   template:
     src: virtual_ldap
     dest: /etc/postfix
 
-- name: Map virtual_ldap
+- name: "postfix : Map virtual_ldap"
   command:
     cmd: postmap /etc/postfix/virtual_ldap
 
