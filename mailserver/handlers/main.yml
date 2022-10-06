@@ -9,3 +9,8 @@
     name: cyrus-imapd
     state: restarted
 
+- name: Restart httpd
+  service:
+    name: httpd
+    state: restarted
+  listen: restart_httpd

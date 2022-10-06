@@ -1,0 +1,72 @@
+- name: "autoconfig : Install Packages"
+  package:
+    name:
+      - httpd
+      - python3-flask
+      - mod_auth_gssapi
+      - mod_ssl
+      - python3-mod_wsgi
+      - python3-ldap3
+      - python3-configargparse
+      - python3-toml
+    state: latest
+
+- name: "autoconfig : Create app folder"
+  file:
+    path: /var/www/autoconfig
+    state: directory
+
+- name: "autoconfig : Install apache config"
+  template:
+    src: autoconfig.conf
+    dest: /etc/httpd/conf.d
+  notify: restart_httpd
+
+- name: "autoconfig : Create group apache"
+  group:
+    name: apache
+    system: yes
+
+- name: "autoconfig : Create apache user"
+  user:
+    name: apache
+    create_home: no
+    group: apache
+    home: /usr/share/httpd
+    shell: /sbin/nologin
+    system: yes
+
+- name: "autoconfig : Install webapp"
+  copy:
+    src: autoconfig
+    dest: /var/www
+  notify: restart_httpd
+
+- name: "autoconfig : Install autoconfig.ini"
+  template:
+    src: autoconfig.ini
+    dest: /var/www/autoconfig
+  notify: restart_httpd
+
+- name: "autoconfig : Create service HTTP/{{ ansible_fqdn }}"
+  ipa_service:
+    name: "HTTP/{{ ansible_fqdn }}"
+    ipa_host: "{{ ipa_server }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
+
+- name: "autoconfig : Get keytab"
+  shell:
+    cmd: |
+        kinit -k
+        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/httpd/krb5.keytab
+        kdestroy
+    creates: /etc/httpd/krb5.keytab
+
+- name: "autoconfig : Chown keytab"
+  file:
+    path: /etc/httpd/krb5.keytab
+    owner: apache
+    mode: 0600

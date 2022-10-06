@@ -63,6 +63,7 @@
 # Run tasks
 - import_tasks: postfix.yml
 - import_tasks: cyrus-imap.yml
+- import_tasks: autoconfig.yml
 - import_tasks: certificates.yml
 
 ##############################################################################
@@ -97,6 +98,7 @@
     - postfix
     - saslauthd
     - cyrus-imapd
+    - httpd
     - firewalld
 
 - name: Open firewall
@@ -110,3 +112,5 @@
     - smtp-submission
     - imap
     - managesieve
+    - http
+    - https
