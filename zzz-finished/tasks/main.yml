@@ -1,16 +1,12 @@
 # tasks file for zzz-finished
-- name: Finished on Console
-  shell: 'echo -e "\n-----------\nConfiguration successfully finished\n-----------\n" > /dev/console'
-  changed_when: False
 
-- name: Check default target
+- name: "Find /etc/issue.d/please-wait.issue"
   stat:
-    path: /etc/systemd/system/default.target
-  register: default_target
+    path: /etc/issue.d/please-wait.issue
+  register: stat_please_wait
 
-- name: Start GUI if default target is graphical
-  service:
-    name: gdm
-    state: started
-  when: default_target.stat.islnk and default_target.stat.lnk_source == "/usr/lib/systemd/system/graphical.target"
-  changed_when: False
+- name: "Does /etc/issue.d/please-wait.issue exist?"
+  debug:
+    msg: If yes, show message when finished
+  changed_when: stat_please_wait.stat.exists
+  notify: show_success_message
