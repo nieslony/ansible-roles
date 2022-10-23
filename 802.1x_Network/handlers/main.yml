@@ -1,2 +1,8 @@
 ---
 # handlers file for 802.1x_Network
+
+- name: Restart sssd
+  service:
+    name: sssd
+    state: restarted
+  listen: restart_sssd
