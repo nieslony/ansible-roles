@@ -1,11 +1,31 @@
 # tasks file for default-packages
+- name: Configure dnf
+  ini_file:
+    path: /etc/dnf/dnf.conf
+    section: main
+    option: "{{ item.key }}"
+    value: "{{ item.value  | string }}"
+  loop:
+    - { key: "gpgcheck", value: "True" }
+    - { key: "repo_gpgcheck", value: "False" }
+    - { key: "sslverify", value: "True" }
+    - { key: "excludepkgs", value: "gnome-initial-setup" }
+    - { key: "best", value: "False" }
+
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
 
 - name: Install updates
   dnf:
     name: "*"
     state: latest
 
-- name: Install packages
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
+
+- name: "Install default packages {{ default_packages | join(', ') }}"
   dnf:
     name: "{{ default_packages }}"
     state: latest
