@@ -1,2 +1,23 @@
 ---
 # handlers file for zzz-finished
+- name: 'Remove issue "Wait until finished"'
+  file:
+    path: /etc/issue.d/please-wait.issue
+    state: absent
+  listen: show_success_message
+
+- name: Show success message
+  shell:
+      cmd: |
+        echo -e "$(
+        cat <<EOF
+        \e[92;40m
+        +-----------------------------------------------------------------------+
+        |                                                                       |
+        |     System configuration succesfully finished. Have a lot of fun.     |
+        |                                                                       |
+        +-----------------------------------------------------------------------+
+        \e[0m
+        EOF
+        )" > /dev/console
+  listen: show_success_message
