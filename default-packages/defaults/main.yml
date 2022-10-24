@@ -6,6 +6,7 @@ default_packages:
     - langpacks-de
     - langpacks-en
     - langpacks-it
+    - lvm2
     - lsof
     - lsscsi
     - "{{
