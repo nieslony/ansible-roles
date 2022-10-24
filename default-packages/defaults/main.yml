@@ -2,9 +2,21 @@
 default_packages:
     - bash-completion
     - bind-utils
+    - emacs-nox
     - langpacks-de
+    - langpacks-en
     - langpacks-it
     - lsof
+    - lsscsi
+    - "{{
+        'mailx'
+            if (
+                ansible_facts['distribution'] == 'CentOS'
+                and
+                ansible_facts['distribution_major_version'] == '8'
+                )
+        else 's-nail'
+        }}"
     - net-tools
     - openldap-clients
     - pciutils
