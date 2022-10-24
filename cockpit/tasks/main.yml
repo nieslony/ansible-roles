@@ -31,6 +31,8 @@
     name: "HTTP/{{ ansible_fqdn }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    https_proxy: ""
+    http_proxy: ""
 
 - name: "Get keytab {{ keytab }}"
   shell:
