@@ -1,51 +1,36 @@
-- set_fact:
-    mail_server: >-
-        {%-
-              if mail_server is not defined
-                or mail_server | type_debug == 'NoneType'
-                or mail_server == ''
-        -%}
-            {%- set mx = lookup(
-                'community.general.dig',
-                '{{ ansible_domain }}./MX',
-                'flat=0',
-                wantlist=True
-                ) | first
-            -%}
-            {{ mx.exchange[:-1] }}
-        {%- else -%}
-            {{ mail_server }}
-        {%- endif -%}
+- name: "DNS lookup {{ ansible_domain }}/MX"
+  shell: "host -t mx {{ ansible_domain }} | tail -1 | awk '{ print substr($NF, 1, length($NF)-1); }'"
+  register: mx_record
+  changed_when: no
 
-    ldap_servers: >-
-        {%-
-              if ldap_servers is not defined
-                or ldap_servers | type_debug == 'NoneType'
-                or ldap_servers == ''
-        -%}
-            {%- set tmp = [] -%}
-            {%- for item in
-                lookup(
-                    'community.general.dig',
-                    '_ldap._tcp.{{ ansible_domain }}./SRV',
-                    'flat=0',
-                    wantlist=True
-                ) | sort(attribute='priority')
-            -%}
-                {%- set _ =
-                    tmp.append('ldap://' + item.target[:-1] + ':' + item.port|string)
-                -%}
-            {%- endfor -%}
-            {{ tmp }}
-        {%- else -%}
-            {{ ldap_servers }}
-        {%- endif -%}
+- name: "DNS lookup _ldap._tcp.{{ ansible_domain }}/SRV"
+  shell: "host -t srv _ldap._tcp.{{ ansible_domain }} | awk '{ print substr($NF, 1, length($NF)-1); }'"
+  register: ldap_record
+  changed_when: no
+
+- name: "DNS lookup ipa-ca.{{ ansible_domain }}"
+  shell: >-
+    for ip in $(
+        host ipa-ca.{{ ansible_domain }} |
+        tail -1 |
+        awk '{ print $NF; }'
+    ); do
+      host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+    done
+  register: ipa_server_record
+  changed_when: no
+
+- name: "Set facts based on DNS records"
+  set_fact:
+    mail_server: "{{ mail_server if mail_server is defined else mx_record.stdout }}"
+    ipa_server: "{{ ipa_server if ipa_server is defined else ipa_server_record.stdout }}"
+    ldap_servers: "{{ ldap_servers if ldap_servers is defined else ldap_record.stdout_lines }}"
 
     ldap_base_dn: >-
         {%-
-              if ldap_servers is not defined
-                or ldap_servers | type_debug == 'NoneType'
-                or ldap_servers == ''
+            if ldap_base_dn is not defined
+                or ldap_base_dn | type_debug == 'NoneType'
+                or ldap_base_dn == ''
         -%}
             {{
                 ansible_domain.split('.') |
