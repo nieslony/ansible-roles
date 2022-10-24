@@ -1,4 +1,7 @@
 # tasks file for thunderbird
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: "thunderbird: Install thunderbird"
   package:
     name: thunderbird

@@ -3,7 +3,7 @@ search_base = {{ ldap_base_dn }}
 start_tls = yes
 version = 3
 
-query_filter = (mail=%s)
+query_filter = (&(objectclass=inetuser)(mail=%s))
 result_attribute = uid
 
 bind = sasl

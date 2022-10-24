@@ -1,5 +1,5 @@
 - name: "postfix : Configure postfix"
-  command: "postconf -e '{{ item.key }} = {{ item.value }}'"
+  command: "postconf -e '{{ item.key }} = {{ item.value | join(', ') if item.value is not string else item.value }}'"
   loop: "{{ main_cfg_opts | dict2items }}"
   changed_when: false
 
@@ -7,7 +7,7 @@
   command:
     cmd: >
         postconf -Me submission/inet="
-        submission inet n - y - - smtpd -o
+        submission inet n - n - - smtpd -v -o
         {{
             master_cfg_opts.submission_inet.keys()
                 | zip(master_cfg_opts.submission_inet.values())
@@ -20,8 +20,11 @@
 - name: "postfix : Create service smtp/{{ ansible_fqdn }}"
   ipa_service:
     name: "smtp/{{ ansible_fqdn }}"
+    ipa_host: "{{ ipa_server }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
 
 - name: "postfix : Get keytab for smtp"
   block:
@@ -43,10 +46,14 @@
     path: /etc/postfix/krb5.keytab
     owner: postfix
 
-- name: Install virtual_ldap
+- name: "postfix : Install virtual_ldap"
   template:
     src: virtual_ldap
     dest: /etc/postfix
+
+- name: "postfix : Map virtual_ldap"
+  command:
+    cmd: postmap /etc/postfix/virtual_ldap
 
 - name: "postfix : Configure saslauthd"
   copy:
