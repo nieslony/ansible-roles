@@ -83,10 +83,8 @@ packages_amavis:
 packages_cyrus_imapd:
     - cyrus-imapd-utils
     - cyrus-imapd
-    - cyrus-imapd-vzic
 
 packages_postfix:
-    - mailx
     - postfix
     - postfix-ldap
     - opendkim
