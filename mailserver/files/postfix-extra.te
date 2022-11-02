@@ -1,0 +1,13 @@
+module postfix-extra 1.0;
+
+require {
+	type cyrus_var_run_t;
+	type postfix_smtp_t;
+	class sock_file write;
+}
+
+#============= postfix_smtp_t ==============
+allow postfix_smtp_t cyrus_var_run_t:sock_file write;
+
+#============= init_t ==============
+allow init_t postfix_smtpd_tmp_t:file unlink;

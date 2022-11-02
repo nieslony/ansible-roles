@@ -59,3 +59,10 @@
   copy:
     src: smtpd.conf
     dest: /etc/sasl2
+
+- name: "postfix : Install selinux policy"
+  block:
+    - name: "postfix : copy postfix-extra.te"
+      copy:
+        src: postfix-extra.te
+        dest: /root
