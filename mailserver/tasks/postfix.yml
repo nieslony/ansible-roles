@@ -60,9 +60,13 @@
     src: smtpd.conf
     dest: /etc/sasl2
 
-- name: "postfix : Install selinux policy"
-  block:
-    - name: "postfix : copy postfix-extra.te"
-      copy:
-        src: postfix-extra.te
-        dest: /root
+- name: Create folder for extra selinux modules
+  file:
+    path: /var/local/selinux-modules
+    state: directory
+
+- name: "postfix : copy postfix-extra.te"
+  copy:
+    src: postfix-extra.te
+    dest: /var/local/selinux-modules
+  notify: selinux_module_postfix_extra

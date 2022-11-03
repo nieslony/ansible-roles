@@ -1,4 +1,16 @@
 # handlers file for nextcloud
+- name: Recreate selinux module postfix-extra
+  command: checkmodule -M -m -o /var/local/selinux-modules/postfix-extra.mod /var/local/selinux-modules/postfix-extra.te
+  listen: selinux_module_postfix_extra
+
+- name: Package selinux module
+  command: semodule_package -o /var/local/selinux-modules/postfix-extra.pp -m /var/local/selinux-modules/postfix-extra.mod
+  listen: selinux_module_postfix_extra
+
+- name: Install selinux module
+  command: semodule -i /var/local/selinux-modules/postfix-extra.pp
+  listen: selinux_module_postfix_extra
+
 - name: Restart postfix
   service:
     name: postfix
