@@ -1,0 +1,54 @@
+- name: "roundcube : Install Roundcube packages {{ packages_roundcube | join(', ') }}"
+  dnf:
+    name: "{{ packages_roundcube }}"
+    state: latest
+
+- name: "roundcube : Allow webmail from everywhere"
+  replace:
+    path: /etc/httpd/conf.d/roundcubemail.conf
+    regexp: >
+        (<Directory /usr/share/roundcubemail/>\n
+        \s*<IfModule mod_authz_core.c>\n
+        \s*# Apache 2.4\n
+        \s*)Require local
+    replace: '\1Require all granted\n'
+
+- name: "roundcube : Start mariadb"
+  service:
+    name: mariadb
+    enabled: yes
+    state: started
+
+- name: "roundcube : Create database"
+  mysql_db:
+    name: roundcube_db
+
+- name: "roundcube : Create roundcube user"
+  mysql_user:
+    name: roundcube_user
+    priv: "roundcube_db.*:ALL"
+    password: "{{ roundcube_password }}"
+
+- name: "roundcube : Set timezone"
+  ini_file:
+    path: /etc/php.ini
+    section: Date
+    option: date.timezone
+    value: "Europe/Vienna"
+
+- name: "roundcube : Copy roundcube config"
+  template:
+    src: "{{ item }}"
+    dest: /etc/roundcubemail
+  loop:
+    - config.inc.php
+    - new_user_identity.inc.php
+
+- name: "roundcube : Initialize database"
+  shell: "mysql --user=roundcube_user --password={{ roundcube_password }} roundcube_db < /usr/share/roundcubemail/SQL/mysql.initial.sql"
+
+- name: "round cube : Enable selinux boolean"
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes

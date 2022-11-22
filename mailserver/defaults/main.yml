@@ -39,9 +39,9 @@ main_cfg_opts:
 
 imapd_conf_opts:
     sasl_keytab: "/etc/cyrus-krb5.keytab"
-    sasl_mech_list: "gssapi"
-    autocreate_inbox_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
-    autocreate_subscribe_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
+    sasl_mech_list: "gssapi plain login"
+    autocreate_inbox_folders: "Sent|Drafts|Junk|Archives|Trash"
+    autocreate_subscribe_folders: "Sent|Drafts|Junk|Archives|Trash"
     autocreate_post: "1"
     autocreate_quota: "1048576"
     serverinfo: "off"
@@ -55,6 +55,7 @@ packages_common:
     - cyrus-sasl
     - cyrus-sasl-gssapi
     - python3-urllib-gssapi
+    - cyrus-sasl-plain
 
 packages_amavis:
     - amavis
@@ -75,7 +76,6 @@ packages_amavis:
     - nomarch
     - p7zip
     - perl-Getopt-Long
-    - spax
     - unrar
     - unzip
     - zip
@@ -88,3 +88,24 @@ packages_postfix:
     - postfix
     - postfix-ldap
     - opendkim
+
+packages_roundcube:
+    - roundcubemail
+    - mariadb-server
+    - php-fpm
+    - php-ldap
+    - php-imagick
+    - php-common
+    - php-gd
+    - php-json
+    - php-curl
+    - php-zip
+    - php-xml
+    - php-mbstring
+    - php-bz2
+    - php-intl
+    - php-gmp
+    - php-mysqlnd.x86_64
+    - python3-mysqlclient
+
+roundcube_password: "Heexeb0AHeiz7eca"
