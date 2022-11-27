@@ -54,8 +54,8 @@ imapd_conf_opts:
 packages_common:
     - cyrus-sasl
     - cyrus-sasl-gssapi
-    - python3-urllib-gssapi
     - cyrus-sasl-plain
+    - python3-urllib-gssapi
 
 packages_amavis:
     - amavis
@@ -81,31 +81,61 @@ packages_amavis:
     - zip
 
 packages_cyrus_imapd:
-    - cyrus-imapd-utils
     - cyrus-imapd
+    - cyrus-imapd-utils
 
 packages_postfix:
+    - opendkim
     - postfix
     - postfix-ldap
-    - opendkim
 
 packages_roundcube:
-    - roundcubemail
     - mariadb-server
-    - php-fpm
-    - php-ldap
-    - php-imagick
-    - php-common
-    - php-gd
-    - php-json
-    - php-curl
-    - php-zip
-    - php-xml
-    - php-mbstring
     - php-bz2
-    - php-intl
+    - php-common
+    - php-curl
+    - php-fpm
+    - php-gd
     - php-gmp
-    - php-mysqlnd.x86_64
+    - php-imagick
+    - php-intl
+    - php-json
+    - php-ldap
+    - php-mbstring
+    - php-mysqlnd
+    - php-xml
+    - php-zip
     - python3-mysqlclient
+    - roundcubemail
 
 roundcube_password: "Heexeb0AHeiz7eca"
+
+packages_nextcloud:
+    - bash-completion
+    - bzip2
+    - curl
+    - httpd
+    - httpd-tools
+    - mlocate
+    - mysql-server
+    - php-bz2
+    - php-common
+    - php-curl
+    - php-fpm
+    - php-gd
+    - php-gmp
+    - php-imagick
+    - php-intl
+    - php-json
+    - php-ldap
+    - php-mbstring
+    - php-mysqlnd
+    - php-opcache
+    - php-pecl-apcu
+    - php-xml
+    - php-zip
+    - policycoreutils-python-utils
+    - python3-mysqlclient
+    - unzip
+    - wget
+    - yum-utils
