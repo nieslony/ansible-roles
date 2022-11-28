@@ -42,6 +42,29 @@
     name: "{{ packages_common + packages_postfix + packages_cyrus_imapd }}"
     state: latest
 
+- name: "Create CNAMES in zone {{ mydomain }}"
+  ipadnsrecord:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    zone_name: "{{ mydomain }}"
+    record_type: CNAME
+    cname_hostname: "{{ ansible_fqdn }}."
+    name: "{{ item }}"
+  loop:
+    - cloud
+    - webmail
+
+- name: "Create host objects for CNAMES"
+  ipahost:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    hosts:
+      - name: "cloud.{{ mydomain }}"
+        managedby_host: "{{ ansible_fqdn }}"
+      - name: "webmail.{{ mydomain }}"
+        managedby_host: "{{ ansible_fqdn }}"
+    state: present
+    random: yes
+    update_password: on_create
+
 ##############################################################################
 # Get configuration checksum
 - name: Get status of postfix/main.cf
@@ -65,8 +88,8 @@
 - import_tasks: amavis.yml
 - import_tasks: cyrus-imap.yml
 - import_tasks: autoconfig.yml
-# - import_tasks: roundcube.yml
-- import_tasks: nextcloud.conf
+### - import_tasks: roundcube.yml
+- import_tasks: nextcloud.yml
 - import_tasks: certificates.yml
 
 ##############################################################################
