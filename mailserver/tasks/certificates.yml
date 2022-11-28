@@ -1,5 +1,19 @@
 - name: "certificates : Install certificates certificates issued by ipa"
   block:
+    - set_fact:
+        postfix_certs_folder: /etc/pki/postfix
+        cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
+        webserver_certs_folder: /etc/pki/httpd
+
+    - set_fact:
+        ca_cert_file: /etc/ipa/ca.crt
+        postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
+        postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
+        cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
+        cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
+        webserver_cert_file: "{{ webserver_certs_folder }}/{{ myhostname }}.crt"
+        webserver_cert_key_file: "{{ webserver_certs_folder }}/{{ myhostname }}.key"
+
     - name: "certificates : Create certificates folder"
       file:
         path: "{{ item }}"
@@ -7,6 +21,24 @@
       loop:
        - "{{ postfix_certs_folder }}"
        - "{{ cyrus_imapd_certs_folder }}"
+       - "{{ webserver_certs_folder }}"
+
+    - name: "certificates : Get SSL certificate for webserver"
+      command:
+        cmd: |
+            ipa-getcert request
+                --keyfile {{ webserver_cert_key_file }}
+                --certfile {{ webserver_cert_file }}
+                --key-owner apache
+                --cert-owner apache
+                --principal host/{{ ansible_fqdn }}
+                --dns "{{ ansible_fqdn }}"
+                --dns "cloud.{{ mydomain }}"
+                --dns "webmail.{{ mydomain }}"
+                --wait
+        creates: "{{ webserver_cert_file }}"
+      environment:
+        KRB5_CLIENT_KTNAME: /etc/krb5.keytab
 
     - name: "certificates : Get SSL certificate for postfix"
       command:
@@ -33,34 +65,37 @@
         creates: "{{ cyrus_imapd_cert_file }}"
       environment:
         KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-
-    - name: "certificates : Enable certificates for postfix"
-      command: "postconf -e '{{ item.key }} = {{ item.value }}'"
-      loop: "{{ options | dict2items }}"
-      vars:
-        options:
-            smtpd_tls_cert_file: "{{ postfix_cert_file }}"
-            smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
-      changed_when: false
-
-    - name: Symlink cert for cyrus-imapd
-      file:
-        path: "{{ item.path }}"
-        src: "{{ item.src }}"
-        state: link
-      loop:
-        - path: /etc/pki/cyrus-imapd/cyrus-imapd.pem
-          src: "{{ cyrus_imapd_cert_file }}"
-        - path: /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
-          src: "{{ cyrus_imapd_cert_key_file }}"
-        - path: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
-          src: /etc/ipa/ca.crt
-
-  vars:
-    postfix_certs_folder: /etc/pki/postfix
-    postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
-    postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
-    cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
-    cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
-    cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
   when: certs_issued_by == "ipa"
+
+- name: "certificates : Enable certificates for webserver"
+  lineinfile:
+    path: /etc/httpd/conf.d/ssl.conf
+    regexp: "{{ item.key}} *"
+    line: "{{ item.key }} {{ item.value }}"
+  loop:
+    - { key: SSLCertificateFile, value: "{{ webserver_cert_file }}" }
+    - { key: SSLCertificateKeyFile, value: "{{ webserver_cert_key_file }}" }
+    - { key: SSLCACertificateFile, value: "{{ ca_cert_file }}" }
+  notify: restart_httpd
+
+- name: "certificates : Enable certificates for postfix"
+  command: "postconf -e '{{ item.key }} = {{ item.value }}'"
+  loop: "{{ options | dict2items }}"
+  vars:
+    options:
+        smtpd_tls_cert_file: "{{ postfix_cert_file }}"
+        smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
+  changed_when: false
+
+- name: "certificates : Symlink cert for cyrus-imapd"
+  file:
+    path: "{{ item.path }}"
+    src: "{{ item.src }}"
+    state: link
+  loop:
+    - path: /etc/pki/cyrus-imapd/cyrus-imapd.pem
+      src: "{{ cyrus_imapd_cert_file }}"
+    - path: /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
+      src: "{{ cyrus_imapd_cert_key_file }}"
+    - path: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+      src: "{{ ca_cert_file }}"
