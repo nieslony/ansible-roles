@@ -23,23 +23,6 @@
        - "{{ cyrus_imapd_certs_folder }}"
        - "{{ webserver_certs_folder }}"
 
-    - name: "certificates : Get SSL certificate for webserver"
-      command:
-        cmd: |
-            ipa-getcert request
-                --keyfile {{ webserver_cert_key_file }}
-                --certfile {{ webserver_cert_file }}
-                --key-owner apache
-                --cert-owner apache
-                --principal host/{{ ansible_fqdn }}
-                --dns "{{ ansible_fqdn }}"
-                --dns "cloud.{{ mydomain }}"
-                --dns "webmail.{{ mydomain }}"
-                --wait
-        creates: "{{ webserver_cert_file }}"
-      environment:
-        KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-
     - name: "certificates : Get SSL certificate for postfix"
       command:
         cmd: |
@@ -66,17 +49,6 @@
       environment:
         KRB5_CLIENT_KTNAME: /etc/krb5.keytab
   when: certs_issued_by == "ipa"
-
-- name: "certificates : Enable certificates for webserver"
-  lineinfile:
-    path: /etc/httpd/conf.d/ssl.conf
-    regexp: "{{ item.key}} *"
-    line: "{{ item.key }} {{ item.value }}"
-  loop:
-    - { key: SSLCertificateFile, value: "{{ webserver_cert_file }}" }
-    - { key: SSLCertificateKeyFile, value: "{{ webserver_cert_key_file }}" }
-    - { key: SSLCACertificateFile, value: "{{ ca_cert_file }}" }
-  notify: restart_httpd
 
 - name: "certificates : Enable certificates for postfix"
   command: "postconf -e '{{ item.key }} = {{ item.value }}'"

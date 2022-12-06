@@ -19,22 +19,8 @@
 - name: "autoconfig : Install apache config"
   template:
     src: autoconfig.conf
-    dest: /etc/httpd/conf.d
+    dest: "/etc/httpd/conf.d/autoconfig.{{ ansible_domain }}.conf"
   notify: restart_httpd
-
-- name: "autoconfig : Create group apache"
-  group:
-    name: apache
-    system: yes
-
-- name: "autoconfig : Create apache user"
-  user:
-    name: apache
-    create_home: no
-    group: apache
-    home: /usr/share/httpd
-    shell: /sbin/nologin
-    system: yes
 
 - name: "autoconfig : Install webapp"
   copy:
@@ -48,25 +34,3 @@
     dest: /var/www/autoconfig
   notify: restart_httpd
 
-- name: "autoconfig : Create service HTTP/{{ ansible_fqdn }}"
-  ipa_service:
-    name: "HTTP/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
-
-- name: "autoconfig : Get keytab"
-  shell:
-    cmd: |
-        kinit -k
-        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/httpd/krb5.keytab
-        kdestroy
-    creates: /etc/httpd/krb5.keytab
-
-- name: "autoconfig : Chown keytab"
-  file:
-    path: /etc/httpd/krb5.keytab
-    owner: apache
-    mode: 0600
