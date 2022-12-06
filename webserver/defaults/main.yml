@@ -3,6 +3,8 @@ lvm_volgroup: system
 lvm_volume: var_www
 lvm_volsize_gb: 0
 
+vhosts: "{{ [ansible_fqdn] }}"
+
 packages:
     - httpd
     - mod_auth_gssapi
@@ -10,6 +12,6 @@ packages:
     - mod_ssl
     - python3-urllib-gssapi
 keytab: /etc/httpd/krb5.keytab
-ssl_key: "/etc/pki/tls/private/{{ ansible_fqdn }}.key"
-ssl_cert: "/etc/pki/tls/certs/{{ ansible_fqdn }}.crt"
+ssl_key_file: "/etc/pki/tls/private/{{ ansible_fqdn }}.key"
+ssl_cert_file: "/etc/pki/tls/certs/{{ ansible_fqdn }}.crt"
 
