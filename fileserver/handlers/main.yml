@@ -1,0 +1,11 @@
+# handlers file for fileserver
+- name: "Restart samba"
+  service:
+    name: samba
+    state: restarted
+  listen: restart_samba
+
+- name: "Reload NFS exports"
+  command:
+    cmd: "exportfs -r"
+  listen: exportfs

@@ -1,0 +1,78 @@
+---
+# tasks file for fileserver
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- name: "Install packages: {{ packages | join(', ') }}"
+  dnf:
+     name: "{{ packages }}"
+     state: latest
+
+# - name: "Create export folders"
+#   file:
+#     path: "{{ item.path }}"
+#     state: directory
+#   loop: "{{ exports }}"
+#
+# - name: "Create services"
+#   ipa_service:
+#     name: "{{ item }}/{{ ansible_fqdn }}"
+#     ipa_host: "{{ ipa_server }}"
+#   loop:
+#     - cifs
+#     - nfs
+#   environment:
+#     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+#     http_proxy: ""
+#     https_proxy: ""
+#
+# - name: "Get samba keytab"
+#   shell:
+#     cmd: |
+#         kinit -k
+#         ipa-getkeytab -p cifs/{{ ansible_fqdn }} -k /etc/samba/krb5.keytab
+#         kdestroy
+#     creates: /etc/samba/krb5.keytab
+#
+# - name: "Find nfs/{{ ansible_fqdn }} in /etc/krb5.keytab"
+#   shell:
+#     cmd: "echo -e 'rkt /etc/krb5.keytab\nlist' | ktutil | grep -q nfs/ ; exit 0"
+#   register: find_service_nfs
+#   changed_when: no
+#
+# - name: "Get NFS keytab"
+#   shell:
+#     cmd: |
+#         kinit -k
+#         ipa-getkeytab -p nfs/{{ ansible_fqdn }} -k /etc/krb5.keytab
+#         kdestroy
+#   when: find_service_nfs.rc != 0
+#
+# - name: "Install samba.conf"
+#   template:
+#     src: smb.conf
+#     dest: /etc/samba/smb.conf
+#   notify: restart_samba
+#
+# - name: "Install /etc/exports"
+#   template:
+#     src: exports
+#     dest: /etc/exports
+#   notify: exportfs
+#
+# - name: "Start services"
+#   service:
+#     name: "{{ item }}"
+#     state: started
+#   loop:
+#     - smb
+#     - nfs-server
+#
+# - name: Open services in firewall
+#   firewalld:
+#     service: "{{ item }}"
+#     permanent: yes
+#     state: enabled
+#   with_items:
+#     - samba
+#     - nfs
