@@ -1,0 +1,65 @@
+# tasks file for firefox
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- name: Install firefox
+  dnf:
+    name: firefox
+    state: latest
+
+- name: Set uris trusted for negotiate
+  lineinfile:
+    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+    line: |
+        pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | join(', ') }}");
+    regex: |
+        ^pref\("network.negotiate-auth.trusted-uris".*
+
+- name: Set uris trusted for delegation
+  lineinfile:
+    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+    line: |
+        pref("network.negotiate-auth.delegation-uris", "{{ delegation_uris | join(', ') }}");
+    regex: |
+        ^pref\("network.negotiate-auth.delegation-uris".*
+
+- name: Create policies.json
+  copy:
+    dest: /usr/lib64/firefox/distribution/policies.json
+    force: false
+    content: |
+        {}
+
+- name: Read policies.json
+  slurp:
+    src: /usr/lib64/firefox/distribution/policies.json
+  register: policies_json
+
+- name: Add toplevel name to managed bookmarks
+  set_fact:
+    managed_bookmarks: |
+        {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
+
+- name: Parse and combine policies.json
+  set_fact:
+    firefox_policies: |
+        {{ policies_json.content | b64decode | from_json | combine({
+            "policies": {
+                "ShowHomeButton": true,
+                "DisplayBookmarksToolbar": true,
+                "NoDefaultBookmarks": true,
+                "EnableTrackingProtection": {
+                    "Value": true,
+                    "Locked": true,
+                    "Cryptomining": true,
+                    "Fingerprinting": true
+                },
+                "ManagedBookmarks": managed_bookmarks
+            }
+            }, recursive=True)
+        }}
+
+- name: Write policies.json
+  copy:
+    dest: /usr/lib64/firefox/distribution/policies.json
+    content: "{{ firefox_policies | to_nice_json }}"

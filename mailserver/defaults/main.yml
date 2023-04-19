@@ -138,6 +138,8 @@ packages_nextcloud:
     - php-mysqlnd
     - php-opcache
     - php-pecl-apcu
+    - php-process
+    - php-sodium
     - php-xml
     - php-zip
     - policycoreutils-python-utils
@@ -145,3 +147,5 @@ packages_nextcloud:
     - unzip
     - wget
     - yum-utils
+
+nextcloud_occ: "/var/www/html/{{ ansible_fqdn }}/nextcloud/occ"

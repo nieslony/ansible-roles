@@ -1,0 +1,45 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName={{ organization }} (${email})
+Enabled=true
+Parent=carddav-stub
+
+[Authentication]
+Host=cloud.test.lab
+Method=GSSAPI
+Port=443
+ProxyUid=system-proxy
+RememberPassword=true
+User=${USER}
+CredentialName=
+IsExternal=false
+
+[Contacts Backend]
+IncludeMe=true
+
+[WebDAV Backend]
+AvoidIfmatch=false
+CalendarAutoSchedule=false
+Color=
+DisplayName=Contacts
+EmailAddress=
+ResourcePath=/nextcloud/remote.php/dav/addressbooks/users/${USER}/contacts/
+ResourceQuery=
+SslTrust=
+Order=4294967295
+
+[Security]
+Method=tls
+
+[Refresh]
+Enabled=true
+IntervalMinutes=5
+
+[Address Book]
+BackendName=carddav
+Order=4294967295
+
+[Autocomplete]
+IncludeMe=true

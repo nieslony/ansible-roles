@@ -1,0 +1,10 @@
+# defaults file for fileserver
+exports:
+    - { path: /export/data, share: data }
+
+krb5_realm: "{{ ansible_domain | upper }}"
+packages:
+    - ipa-client-samba
+    - nfs-utils
+    - python3-urllib-gssapi
+    - samba

@@ -9,7 +9,7 @@
 
 - name: "nextcloud : Create nextcloud folder"
   stat:
-    path:  /var/www/html/nextcloud
+    path:  /var/www/html/cloud.{{ mydomain }}/nextcloud
   register: stat_nextcloud
   changed_when: no
 
@@ -23,7 +23,7 @@
     - name: "nextcloud : Unpack software"
       unarchive:
         src: /tmp/latest.zip
-        dest: /var/www/html
+        dest: /var/www/html/cloud.{{ mydomain }}
         remote_src: yes
 
     - name: "nextcloud : Remove tmp file"
@@ -33,7 +33,7 @@
 
     - name: "nextcloud : chown apache"
       file:
-        name: /var/www/html/nextcloud
+        name: /var/www/html/cloud.{{ mydomain }}/nextcloud
         owner: apache
         group: apache
         recurse: yes
@@ -82,8 +82,13 @@
     priv: "nextcloud.*:ALL"
     password: "{{ roundcube_password }}"
 
-- name: "nextcloud : Install apache config"
+- name: "nextcloud : Make occ executable"
+  file:
+    path: "{{ nextcloud_occ }}"
+    mode: 0755
+
+- name: "nextcloud : copy apache config"
   template:
     src: nextcloud.conf
-    dest: /etc/httpd/conf.d
+    dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
   notify: restart_httpd

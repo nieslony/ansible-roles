@@ -1,0 +1,51 @@
+# tasks file for evolution
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- name: Install evolution
+  dnf:
+    name:
+        - evolution
+        - openldap-clients
+    state: latest
+
+- name: Create folder /usr/local/etc/evolution
+  file:
+    path: /usr/local/etc/evolution
+    state: directory
+
+
+# 60c87fe7ff8c90d4d6652444232a129456024eeb.source
+# -> autoconf.source
+#
+# b9367db2659447258a47f4835d7cab46b2370279.source
+# -> autoconf-identity.source
+#
+# cc0693111afec299b324badfc0f1fa2d1803632d.source
+# -> autoconf-transport.source
+#
+
+- name: copy evolution sources
+  template:
+    src: "{{ item }}"
+    dest: /usr/local/etc/evolution
+  loop:
+    - autoconf-caldav-nextcloud.source
+    - autoconf-carddav-nextcloud.source
+    - autoconf-identity.source
+    - autoconf-ldap-contacts.source
+    - autoconf.source
+    - autoconf-transport.source
+    - local.source
+    - system-calendar.source
+
+- name: Install evolution-autoconf.sh
+  copy:
+    src: evolution-autoconf.sh
+    dest: /usr/local/bin
+    mode: '0775'
+
+- name: Install evolution-autoconf.desktop
+  copy:
+    src: evolution-autoconf.desktop
+    dest: /etc/xdg/autostart

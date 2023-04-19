@@ -1,0 +1,27 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName=On This Computer
+Enabled=false
+Parent=
+
+[Mail Account]
+BackendName=maildir
+IdentityUid=self
+ArchiveFolder=
+NeedsInitialSetup=false
+MarkSeen=inconsistent
+MarkSeenTimeout=1500
+
+[Maildir Backend]
+FilterInbox=true
+StoreChangesInterval=3
+FilterAll=false
+FilterJunk=true
+MaildirAltFlagSep=false
+Path=${HOME}/.local/share/evolution/mail/local
+
+[Refresh]
+Enabled=true
+IntervalMinutes=60
