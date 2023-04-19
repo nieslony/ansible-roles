@@ -1,7 +1,7 @@
 # handlers file for fileserver
 - name: "Restart samba"
   service:
-    name: samba
+    name: smb
     state: restarted
   listen: restart_samba
 

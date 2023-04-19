@@ -1,0 +1,32 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName={{ organization }} (${email})
+Enabled=true
+Parent=autoconf
+
+[Mail Submission]
+SentFolder=folder://autoconf/Sent
+TransportUid=autoconf-transport
+RepliesToOriginFolder=false
+UseSentFolder=true
+
+[Mail Composition]
+Bcc=
+Cc=
+DraftsFolder=folder://autoconf/Drafts
+ReplyStyle=default
+SignImip=true
+TemplatesFolder=folder://autoconf/Templates
+StartBottom=inconsistent
+TopSignature=inconsistent
+Language=
+
+[Mail Identity]
+Address=${email}
+Aliases=
+Name=${display_name}
+Organization=
+ReplyTo=
+SignatureUid=none

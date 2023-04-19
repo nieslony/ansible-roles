@@ -1,0 +1,21 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName=Personal
+Enabled=false
+Parent=local-stub
+
+[Calendar]
+BackendName=local
+Color=#becedd
+Selected=true
+
+Order=0
+
+[Offline]
+StaySynchronized=true
+
+[Refresh]
+Enabled=true
+IntervalMinutes=30

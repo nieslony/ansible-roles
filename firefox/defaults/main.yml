@@ -1,0 +1,4 @@
+# defaults file for firefox
+trusted_uris: ["{{ ansible_domain }}"]
+delegation_uris: []
+managed_bookmarks: []

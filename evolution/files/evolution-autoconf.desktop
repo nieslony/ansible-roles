@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Create Evolutiondefault configuration
+NoDisplay=true
+Exec=/usr/local/bin/evolution-autoconf.sh

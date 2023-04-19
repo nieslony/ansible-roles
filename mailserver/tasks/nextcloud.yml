@@ -82,6 +82,11 @@
     priv: "nextcloud.*:ALL"
     password: "{{ roundcube_password }}"
 
+- name: "nextcloud : Make occ executable"
+  file:
+    path: "{{ nextcloud_occ }}"
+    mode: 0755
+
 - name: "nextcloud : copy apache config"
   template:
     src: nextcloud.conf

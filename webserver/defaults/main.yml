@@ -4,6 +4,7 @@ lvm_volume: var_www
 lvm_volsize_gb: 0
 
 vhosts: "{{ [ansible_fqdn] }}"
+ok_as_delegate: yes
 
 packages:
     - httpd
