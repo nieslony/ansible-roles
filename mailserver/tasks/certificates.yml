@@ -70,7 +70,7 @@
 - name: "certificates : Enable certificates for webserver"
   lineinfile:
     path: /etc/httpd/conf.d/ssl.conf
-    regexp: "{{ item.key}} *"
+    regexp: "^[# ]*{{ item.key}} *"
     line: "{{ item.key }} {{ item.value }}"
   loop:
     - { key: SSLCertificateFile, value: "{{ webserver_cert_file }}" }

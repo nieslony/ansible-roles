@@ -91,6 +91,9 @@ packages_postfix:
 
 packages_roundcube:
     - mariadb-server
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
     - php-bz2
     - php-common
     - php-curl
@@ -117,6 +120,9 @@ packages_nextcloud:
     - httpd
     - httpd-tools
     - mlocate
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
     - mysql-server
     - php-bz2
     - php-common

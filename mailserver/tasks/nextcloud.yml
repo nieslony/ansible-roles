@@ -81,3 +81,9 @@
     name: nextcloud
     priv: "nextcloud.*:ALL"
     password: "{{ roundcube_password }}"
+
+- name: "nextcloud : Install apache config"
+  template:
+    src: nextcloud.conf
+    dest: /etc/httpd/conf.d
+  notify: restart_httpd
