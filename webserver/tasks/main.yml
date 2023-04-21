@@ -65,7 +65,7 @@
       loop: "{{ vhosts }}"
   when: ipaadmin_password is defined
 
-- name: "Create service HTTP/{{ ansible_fqdn }}"
+- name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
   ipa_service:
     name: "HTTP/{{ ansible_fqdn }}"
     ipa_host: "{{ ipa_server }}"
