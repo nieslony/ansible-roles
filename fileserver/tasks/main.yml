@@ -14,7 +14,7 @@
     state: directory
   loop: "{{ exports }}"
 
-- name: "Create services"
+- name: "Create services on {{ ipa_server }}"
   ipa_service:
     name: "{{ item }}/{{ ansible_fqdn }}"
     ipa_host: "{{ ipa_server }}"
