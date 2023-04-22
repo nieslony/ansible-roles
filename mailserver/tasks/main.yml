@@ -37,7 +37,7 @@
     loop: "{{ logical_volumes }}"
   when: ansible_lvm.vgs.system is defined
 
-- name: "Install packages"
+- name: "Install packages {{ packages_common + packages_postfix + packages_cyrus_imapd }}"
   dnf:
     name: "{{ packages_common + packages_postfix + packages_cyrus_imapd }}"
     state: latest
