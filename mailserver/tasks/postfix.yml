@@ -60,7 +60,7 @@
     src: smtpd.conf
     dest: /etc/sasl2
 
-- name: Create folder for extra selinux modules
+- name: "postfix : Create folder for extra selinux modules"
   file:
     path: /var/local/selinux-modules
     state: directory
