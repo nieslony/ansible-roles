@@ -148,4 +148,4 @@ packages_nextcloud:
     - wget
     - yum-utils
 
-nextcloud_occ: "/var/www/html/{{ ansible_fqdn }}/nextcloud/occ"
+nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
