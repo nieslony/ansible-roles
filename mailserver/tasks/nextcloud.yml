@@ -92,3 +92,49 @@
     src: nextcloud.conf
     dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
   notify: restart_httpd
+
+- name: "nextcloud : Setup nextcloud with occ"
+  become: yes
+  become_user: apache
+  command: >
+    {{ nextcloud_occ }} maintenance:install
+    --database=mysql
+    --database-name=nextcloud
+    --database-host=localhost
+    --database-user=nextcloud
+    --database-pass={{ roundcube_password }}
+    --admin-user=admin
+    --admin-pass={{ nextcloud_admin_password }}
+    --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
+
+# see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
+- name: "nextcloud : config system"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} config:system:set {{ item }}"
+  with_items:
+    - "trusted_domains 1 --value=cloud.{{ mydomain }}"
+    - "overwrite.cli.url --value=https://cloud.{{ mydomain }}/nextcloud"
+    - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
+
+- name: "nextcloud : Update .htaccess"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} maintenance:update:htaccess"
+
+- name: "nextcloud : Install apps"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} app:install {{ item }}"
+  with_items: "{{ nextcloud_install_apps }}"
+
+- name: "nextcloud : Enable apps"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} app:enable {{ item }}"
+  with_items: "{{ nextcloud_enable_apps }}"
+
+- name: "nextcloud : Configure app saml"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} saml:config:set --general-uid_mapping REMOTE_USER 1"

@@ -125,6 +125,7 @@ packages_nextcloud:
     - mod_ssl
     - mysql-server
     - php-bz2
+    - php-cli
     - php-common
     - php-curl
     - php-fpm
@@ -149,3 +150,13 @@ packages_nextcloud:
     - yum-utils
 
 nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
+nextcloud_admin_password: "AdminPassword.1"
+nextcloud_install_apps:
+    - user_saml
+nextcloud_enable_apps:
+    - user_ldap
+nextcloud_ldap_config:
+    ldapBase: "{{ ldap_base_dn }}"
+    ldapPort: 389
+    ldapHost: "{{ ldap_servers | first }}"
+    ldapEmailAttribute: "mail"
