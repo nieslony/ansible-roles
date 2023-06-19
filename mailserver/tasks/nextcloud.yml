@@ -54,6 +54,12 @@
     value: "{{ item.value | string }}"
   loop: "{{ settings | dict2items }}"
 
+- name: "nextcloud: configure php apcu.ini"
+  ini_file:
+    path: /etc/php.d/40-apcu.ini
+    option: "apc.enable_cli"
+    value: "1"
+
 - name: "nextcloud : Start services"
   service:
     name: "{{ item }}"
@@ -82,7 +88,7 @@
     priv: "nextcloud.*:ALL"
     password: "{{ roundcube_password }}"
 
-- name: "nextcloud : Make occ executable"
+- name: "nextcloud : Make occ exeapc.enable_cli=1cutable"
   file:
     path: "{{ nextcloud_occ }}"
     mode: 0755
@@ -103,7 +109,7 @@
     --database-host=localhost
     --database-user=nextcloud
     --database-pass={{ roundcube_password }}
-    --admin-user=admin
+    --admin-user={{ nextcloud_admin_user }}
     --admin-pass={{ nextcloud_admin_password }}
     --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
 
@@ -118,9 +124,14 @@
     - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
 
 - name: "nextcloud : Update .htaccess"
+  copy:
+    src: nextcloud_htaccess
+    dest: "/var/www/html/cloud.{{ mydomain }}/nextcloud/.htaccess"
+
+- name: "Set admin's display name"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} maintenance:update:htaccess"
+  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name 'Nextcloud Administrator'"
 
 - name: "nextcloud : Install apps"
   become: yes
@@ -134,7 +145,29 @@
   command: "{{ nextcloud_occ }} app:enable {{ item }}"
   with_items: "{{ nextcloud_enable_apps }}"
 
-- name: "nextcloud : Configure app saml"
+- name: "nextcloud : Configure app user_saml"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} saml:config:set --general-uid_mapping REMOTE_USER 1"
+
+- name: "nextcloud : Configure app user_saml (2)"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} config:app:set user_saml {{ item.key}} --value {{ item.value }}"
+  with_items: "{{ nextcloud_user_saml_config | dict2items }}"
+
+- name: "nextcloud : Creeate ldap config"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:create-empty-config"
+
+- name: "nextcloud : Configure app user_ldap"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:set-config s01 {{ item.key }} '{{ item.value }}'"
+  with_items: "{{ nextcloud_ldap_config | dict2items }}"
+
+- name: "nextcloud : Test app user_ldap"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:test-config s01"
