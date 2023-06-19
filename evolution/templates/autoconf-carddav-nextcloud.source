@@ -7,7 +7,7 @@ Enabled=true
 Parent=carddav-stub
 
 [Authentication]
-Host=cloud.test.lab
+Host={{ dav_server }}
 Method=GSSAPI
 Port=443
 ProxyUid=system-proxy

@@ -15,7 +15,7 @@ Method=GSSAPI
 Port=443
 ProxyUid=system-proxy
 RememberPassword=true
-User=${USER}
+User=
 CredentialName=
 IsExternal=false
 
@@ -25,20 +25,17 @@ IntervalMinutes=5
 
 [WebDAV Backend]
 AvoidIfmatch=false
-CalendarAutoSchedule=false
+CalendarAutoSchedule=true
 Color=
 DisplayName=
 EmailAddress=${email}
-ResourcePath=/nextcloud/remote.php/dav/calendars/${USER}/personal/
+ResourcePath=/nextcloud/remote.php/dav/calendars/${USER}/tasks/
 ResourceQuery=
 SslTrust=
 Order=4294967295
 
-[Calendar]
+[Task List]
 BackendName=caldav
 Color=#f0e2ef
 Selected=true
 Order=0
-
-[Offline]
-StaySynchronized=true

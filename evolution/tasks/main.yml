@@ -24,7 +24,6 @@
 # cc0693111afec299b324badfc0f1fa2d1803632d.source
 # -> autoconf-transport.source
 #
-
 - name: copy evolution sources
   template:
     src: "{{ item }}"
@@ -32,8 +31,9 @@
   loop:
     - autoconf-caldav-nextcloud.source
     - autoconf-carddav-nextcloud.source
+    - autoconf-tasks-nextcloud.source
     - autoconf-identity.source
-    - autoconf-ldap-contacts.source
+#    - autoconf-ldap-contacts.source
     - autoconf.source
     - autoconf-transport.source
     - local.source
