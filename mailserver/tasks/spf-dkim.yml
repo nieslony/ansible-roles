@@ -1,0 +1,13 @@
+- name: "spf-dkim : Install packages {{ spf_dkim_packages | join(', ') }}"
+  dnf:
+    name: "{{ spf_dkim_packages }}"
+    state:  latest
+
+- name: "spf-dkim : add policyd-spf to master.cf"
+  command:
+    cmd: >
+        postconf -Me policyd-spf/unix="
+            policyd-spf  unix  -       n       n       -       0       spawn
+            user=policyd-spf argv=/usr/libexec/postfix/policyd-spf
+            "
+    changed_when: false

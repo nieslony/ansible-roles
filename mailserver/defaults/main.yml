@@ -233,3 +233,6 @@ nextcloud_ldap_config:
     ldapUserFilterMode: "0"
     ldapUserFilterObjectclass: person
     ldapUserfilterGroups: ""
+
+spf_dkim_packages:
+    - pypolicyd-spf
