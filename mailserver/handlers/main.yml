@@ -15,8 +15,16 @@
   service:
     name: postfix
     state: restarted
+  listen: restart_postfix
 
 - name: Restart cyrus-imapd
   service:
     name: cyrus-imapd
     state: restarted
+  listen: restart_cyrus_imapd
+
+- name: Restart opendkim
+  service:
+    name: opendkim
+    state: restarted
+  listen: restart_opendkim
