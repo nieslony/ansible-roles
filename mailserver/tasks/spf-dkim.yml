@@ -1,13 +1,159 @@
+# https://www.linuxbabe.com/redhat/set-up-spf-dkim-postfix-centos
+
 - name: "spf-dkim : Install packages {{ spf_dkim_packages | join(', ') }}"
   dnf:
     name: "{{ spf_dkim_packages }}"
     state:  latest
 
 - name: "spf-dkim : add policyd-spf to master.cf"
-  command:
-    cmd: >
-        postconf -Me policyd-spf/unix="
+  command: >-
+            postconf -Me policyd-spf/unix='
             policyd-spf  unix  -       n       n       -       0       spawn
             user=policyd-spf argv=/usr/libexec/postfix/policyd-spf
-            "
-    changed_when: false
+            '
+  changed_when: false
+
+- name: "spf-dkim : Get smtpd_recipient_restrictions"
+  shell: "postconf smtpd_recipient_restrictions | awk -F= '{ print $2; }'"
+  register: smtpd_recipient_restrictions
+  changed_when: false
+
+- name: "spf-dkim : Configure smtpd_recipient_restrictions with spf"
+  command: >-
+    postconf smtpd_recipient_restrictions
+    "{{
+        smtpd_recipient_restrictions.stdout
+        | split(',')
+        | union(['check_policy_service unix:private/policyd-spf'])
+        | join(',')
+    }}"
+  changed_when: false
+
+- name: "spf-dkim : Configure /etc/opendkim.conf"
+  lineinfile:
+    path: /etc/opendkim.conf
+    regexp: "^# *Mode *"
+    line: Mode sv
+  notify: restart_opendkim
+
+- name: "spf-dkim : Uncomment in /etc/opendkim.conf"
+  lineinfile:
+    path: /etc/opendkim.conf
+    regexp: "^#? *{{ item.key }} {{ item.value }}"
+    line: "{{ item.key }} {{ item.value }}"
+    backup: yes
+  loop:
+    - key: KeyTable
+      value: "/etc/opendkim/KeyTable"
+    - key: SigningTable
+      value: "refile:/etc/opendkim/SigningTable"
+    - key: ExternalIgnoreList
+      value: "refile:/etc/opendkim/TrustedHosts"
+    - key: InternalHosts
+      value: "refile:/etc/opendkim/TrustedHosts"
+  notify: restart_opendkim
+
+- name: "spf-dkim : Find dkim keys"
+  find:
+    paths: /etc/opendkim/keys/{{ mydomain }}
+    patterns: "????????.private"
+  register: dkim_keys
+
+- name: "spf-dkim : Create dkim keys"
+  block:
+    - set_fact:
+        cur_date: "{{ ansible_date_time.year }}{{ ansible_date_time.month }}{{ ansible_date_time.day }}"
+
+    - name: "spf-dkim : Add domain to /etc/opendkim/SigningTable"
+      lineinfile:
+        path: /etc/opendkim/SigningTable
+        regexp: "{{ tmpl | replace('11112233', '[0-9]+') | replace('*', '\\*') }}"
+        line: "{{ tmpl | replace('11112233', cur_date) }}"
+      vars:
+        tmpl: "*@{{ mydomain }}     11112233._domainkey.{{ mydomain }}"
+      notify: restart_opendkim
+
+    - name: "spf-dkim : Specify DKIM private key"
+      lineinfile:
+        path: /etc/opendkim/KeyTable
+        regexp: "{{ tmpl | replace('11112233', '[0-9]+') | replace('*', '\\*') }}"
+        line: "{{ tmpl | replace('11112233', cur_date) }}"
+      vars:
+        tmpl: "11112233._domainkey.{{ mydomain }}     {{ mydomain }}:11112233:/etc/opendkim/keys/{{ mydomain }}/11112233.private"
+
+    - name: "spf-dkim : Trust our domain"
+      lineinfile:
+        path: /etc/opendkim/TrustedHosts
+        line: ".{{ mydomain }}"
+
+    - name: "spf-dkim : Remove garbage from /etc/opendkim/*"
+      lineinfile:
+        path: "/etc/opendkim/{{ item }}"
+        regexp: "^#.*$|^ *$"
+        state: absent
+      loop:
+        - SigningTable
+        - KeyTable
+        - TrustedHosts
+
+    - name: "spf-dkim : Create key folder /etc/opendkim/keys/{{ mydomain }}"
+      file:
+        path: "/etc/opendkim/keys/{{ mydomain }}"
+        state: directory
+
+    - name: "spf-dkim : Create dkim keys"
+      command: "opendkim-genkey -b 2048 -d {{ mydomain }} -D /etc/opendkim/keys/{{ mydomain }} -s {{ cur_date }} -v"
+
+    - name: "spf-dkim : Chown opendkim /etc/opendkim/keys"
+      file:
+        path: /etc/opendkim/keys
+        owner: opendkim
+        group: opendkim
+        recurse: yes
+
+    - name: "spf-dkim : Slurp Chown opendkim /etc/opendkim/keys/{{ mydomain }}/{{ cur_date }}.txt"
+      slurp:
+        src: "/etc/opendkim/keys/{{ mydomain }}/{{ cur_date }}.txt"
+      register:
+        dkim_key_txt
+
+    - set_fact:
+        dkim_value: "{{ dkim_key_txt.content
+            | b64decode
+            | regex_replace('[\n\t]+', '', multiline=True)
+            | regex_search('\\(.*\\)')
+            | regex_replace('\" *\"', '')
+            | regex_replace('[\"()]', '')
+            | regex_replace('^ | $', '')
+            }}"
+        dkim_name: "{{ cur_date }}._domainkey"
+
+    - name: "spf-dkim : Install README with DNS instructions"
+      template:
+        src: README-spf-dkim
+        dest: /etc/postfix
+  when: dkim_keys.files | length == 0
+
+- name: "spf-dkim : Start opendkim"
+  service:
+    name: opendkim
+    state: restarted
+    enabled: yes
+
+- name: "spf-dkim : enable dkim in main.cf"
+  command: "postconf -e {{ item.key }}={{ item.value }}"
+  loop: "{{ spf_dkim_main_cf | dict2items }}"
+  changed_when: false
+  vars:
+    spf_dkim_main_cf:
+        milter_default_action: accept
+        milter_protocol:  6
+        smtpd_milters: "inet:127.0.0.1:8891"
+        non_smtpd_milters: "$smtpd_milters"
+
+- name: "spf-dkim : add user postfix to group opendkim"
+  user:
+    name: postfix
+    append: yes
+    groups: opendkim
+  notify: restart_postfix
