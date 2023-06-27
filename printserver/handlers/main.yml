@@ -1,2 +1,5 @@
----
-# handlers file for printserver
+- name: Restart cupsd
+  listen: restart_cups
+  service:
+    name: cups
+    state: restarted
