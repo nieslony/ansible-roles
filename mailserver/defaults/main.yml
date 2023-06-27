@@ -151,6 +151,7 @@ packages_nextcloud:
 
 nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
 nextcloud_admin_user: nc-admin
+nextcloud_admin_displayname: "Nextcloud Administrator"
 nextcloud_admin_password: "AdminPassword.1"
 nextcloud_install_apps:
     - user_saml

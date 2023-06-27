@@ -99,6 +99,12 @@
     dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
   notify: restart_httpd
 
+- name: "nextcloud : can install?"
+  stat:
+    path:  /var/www/html/cloud.{{ mydomain }}/nextcloud/CAN_INSTALL
+  register: stat_can_install
+  changed_when: no
+
 - name: "nextcloud : Setup nextcloud with occ"
   become: yes
   become_user: apache
@@ -112,6 +118,7 @@
     --admin-user={{ nextcloud_admin_user }}
     --admin-pass={{ nextcloud_admin_password }}
     --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
+  when: stat_can_install.stat.exists
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "nextcloud : config system"
@@ -128,16 +135,41 @@
     src: nextcloud_htaccess
     dest: "/var/www/html/cloud.{{ mydomain }}/nextcloud/.htaccess"
 
-- name: "Set admin's display name"
+- name: "nextcloud : Get admin's display name"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name 'Nextcloud Administrator'"
+  command: "{{ nextcloud_occ }} user:setting nc-admin settings display_name"
+  register: admin_displayname
+  changed_when: no
+
+- name: "nextcloud : Set admin's display name"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_admin_displayname }}'"
+  when: admin_displayname.stdout != nextcloud_admin_displayname
+
+- name: "nextcloud : Find installed apps"
+  find:
+    paths: "/var/www/html/cloud.{{ mydomain }}/nextcloud/apps"
+    recurse: no
+    file_type: directory
+  register: installed_apps
+
+- set_fact:
+    installed_apps: >-
+        {{
+            installed_apps.files
+            | selectattr("path", "defined")
+            | map(attribute='path')
+            | map('regex_replace', '^.*/', '')
+        }}
 
 - name: "nextcloud : Install apps"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} app:install {{ item }}"
   with_items: "{{ nextcloud_install_apps }}"
+  when: not item in installed_apps
 
 - name: "nextcloud : Enable apps"
   become: yes
