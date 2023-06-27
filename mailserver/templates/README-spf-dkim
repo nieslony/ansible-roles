@@ -1,0 +1,7 @@
+type: TXT
+name: @
+value: v=spf1 mx ~all
+
+name: {{ dkim_name }}
+type: TXT
+value: {{ dkim_value }}
