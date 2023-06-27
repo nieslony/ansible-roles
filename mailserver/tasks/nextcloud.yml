@@ -88,7 +88,7 @@
     priv: "nextcloud.*:ALL"
     password: "{{ roundcube_password }}"
 
-- name: "nextcloud : Make occ exeapc.enable_cli=1cutable"
+- name: "nextcloud : Make occ executable"
   file:
     path: "{{ nextcloud_occ }}"
     mode: 0755
@@ -99,26 +99,21 @@
     dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
   notify: restart_httpd
 
-- name: "nextcloud : can install?"
-  stat:
-    path:  /var/www/html/cloud.{{ mydomain }}/nextcloud/CAN_INSTALL
-  register: stat_can_install
-  changed_when: no
-
 - name: "nextcloud : Setup nextcloud with occ"
   become: yes
   become_user: apache
-  command: >
-    {{ nextcloud_occ }} maintenance:install
-    --database=mysql
-    --database-name=nextcloud
-    --database-host=localhost
-    --database-user=nextcloud
-    --database-pass={{ roundcube_password }}
-    --admin-user={{ nextcloud_admin_user }}
-    --admin-pass={{ nextcloud_admin_password }}
-    --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
-  when: stat_can_install.stat.exists
+  command:
+    cmd: >-
+        {{ nextcloud_occ }} maintenance:install
+            --database=mysql
+            --database-name=nextcloud
+            --database-host=localhost
+            --database-user=nextcloud
+            --database-pass={{ roundcube_password }}
+            --admin-user={{ nextcloud_admin_user }}
+            --admin-pass={{ nextcloud_admin_password }}
+            --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
+    creates: /var/www/html/cloud.{{ mydomain }}/nextcloud/config/config.php
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "nextcloud : config system"
@@ -155,7 +150,8 @@
     file_type: directory
   register: installed_apps
 
-- set_fact:
+- name: "nextcloud : get installed apps"
+  set_fact:
     installed_apps: >-
         {{
             installed_apps.files
