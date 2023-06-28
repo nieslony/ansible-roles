@@ -39,9 +39,9 @@ main_cfg_opts:
 
 imapd_conf_opts:
     sasl_keytab: "/etc/cyrus-krb5.keytab"
-    sasl_mech_list: "gssapi"
-    autocreate_inbox_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
-    autocreate_subscribe_folders: "Inbox|Sent|Drafts|Junk|Archives|Trash"
+    sasl_mech_list: "gssapi plain login"
+    autocreate_inbox_folders: "Sent|Drafts|Junk|Archives|Trash"
+    autocreate_subscribe_folders: "Sent|Drafts|Junk|Archives|Trash"
     autocreate_post: "1"
     autocreate_quota: "1048576"
     serverinfo: "off"
@@ -54,6 +54,7 @@ imapd_conf_opts:
 packages_common:
     - cyrus-sasl
     - cyrus-sasl-gssapi
+    - cyrus-sasl-plain
     - python3-urllib-gssapi
 
 packages_amavis:
@@ -75,18 +76,167 @@ packages_amavis:
     - nomarch
     - p7zip
     - perl-Getopt-Long
-    - spax
     - unrar
     - unzip
     - zip
 
 packages_cyrus_imapd:
-    - cyrus-imapd-utils
     - cyrus-imapd
-    - cyrus-imapd-vzic
+    - cyrus-imapd-utils
 
 packages_postfix:
-    - mailx
+    - opendkim
     - postfix
     - postfix-ldap
+
+packages_roundcube:
+    - mariadb-server
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
+    - php-bz2
+    - php-common
+    - php-curl
+    - php-fpm
+    - php-gd
+    - php-gmp
+    - php-imagick
+    - php-intl
+    - php-json
+    - php-ldap
+    - php-mbstring
+    - php-mysqlnd
+    - php-xml
+    - php-zip
+    - python3-mysqlclient
+    - roundcubemail
+
+roundcube_password: "Heexeb0AHeiz7eca"
+
+packages_nextcloud:
+    - bash-completion
+    - bzip2
+    - curl
+    - httpd
+    - httpd-tools
+    - mlocate
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
+    - mysql-server
+    - php-bz2
+    - php-cli
+    - php-common
+    - php-curl
+    - php-fpm
+    - php-gd
+    - php-gmp
+    - php-imagick
+    - php-intl
+    - php-json
+    - php-ldap
+    - php-mbstring
+    - php-mysqlnd
+    - php-opcache
+    - php-pecl-apcu
+    - php-process
+    - php-sodium
+    - php-xml
+    - php-zip
+    - policycoreutils-python-utils
+    - python3-mysqlclient
+    - unzip
+    - wget
+    - yum-utils
+
+nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
+nextcloud_admin_user: nc-admin
+nextcloud_admin_displayname: "Nextcloud Administrator"
+nextcloud_admin_password: "AdminPassword.1"
+nextcloud_install_apps:
+    - user_saml
+    - tasks
+    - calendar
+    - contacts
+    - richdocuments
+    - announcementcenter
+    - groupfolders
+    - deck
+    - mail
+    - notes
+    - spreed
+nextcloud_enable_apps:
+    - user_ldap
+nextcloud_user_saml_config:
+    general-require_provisioned_account: 1
+    type: environment-variable
+nextcloud_ldap_config:
+    hasMemberOfFilterSupport: 1
+    ldapAgentName: "uid=rossi,cn=users,cn=accounts,dc=linux,dc=lab"
+    ldapAgentPassword: "UserPassword.1"
+    ldapAttrAddress: ""
+    ldapAttrBiography: ""
+    ldapAttrFediverse: ""
+    ldapAttrHeadline: ""
+    ldapAttrOrganisation: ""
+    ldapAttrPhone: ""
+    ldapAttrRole: ""
+    ldapAttrTwitter: ""
+    ldapAttrWebsite: ""
+    ldapAttributesForGroupSearch: ""
+    ldapAttributesForUserSearch: ""
+    ldapBackgroundHost: ""
+    ldapBackgroundPort: ""
+    ldapBackupHost: ""
+    ldapBackupPort: ""
+    ldapBase: "{{ ldap_base_dn }}"
+    ldapBaseGroups: "{{ ldap_base_dn }}"
+    ldapBaseUsers: "{{ ldap_base_dn }}"
+    ldapCacheTtl: "600"
+    ldapConfigurationActive: 1
+    ldapConnectionTimeout: "15"
+    ldapDefaultPpolicyDn: ""
+    ldapDn: "uid=rossi,cn=users,cn=accounts,dc=linux,dc=lab"
+    ldapDynamicGroupMemberUrl: ""
+    ldapEmailAttribute: "mail"
+    ldapExperiencedAdmin: "0"
+    ldapExpertUsernameAttr: uid
+    ldapExpertUuidGroupAttr: ""
+    ldapExpertUuidUserAttr: ""
+    ldapExtStorageHomeAttribute: ""
+    ldapGidNumber: "gidNumber"
+    ldapGroupDisplayName: "cn"
+    ldapGroupFilter: ""
+    ldapGroupFilterMode: "0"
+    ldapGroupMemberAssocAttribute: ""
+    ldapGroupfilterGroups: ""
+    ldapGroupfilterObjectclass: ""
+    ldapHost: "{{ ldap_servers | first }}"
+    ldapLoginFilter: "(&(&(|(objectclass=person)))(uid=%uid))"
+    ldapLoginFilterMode: "0"
+    ldapLoginfilterAttributes: ""
+    ldapLoginfilterEmail: "0"
+    ldapLoginfilterUsername: "1"
+    ldapMatchingRule_inChainState: "unknown"
+    ldapNestedGroups: "0"
+    ldapOverrideMainServer: ""
+    ldapPagingSize: "500"
+    ldapPort: 389
+    ldapQuotaAttr: ""
+    ldapQuotaDef: ""
+    ldapTls: "0"
+    ldapTurnOffCertCheck: "0"
+    ldapTurnOnPwdChange: "0"
+    ldapUserAvatarRule: "default"
+    ldapUserDisplayName: displayname
+    ldapUserDisplayName_2: ""
+    ldapUserFilter: "(&(|(objectclass=person)))"
+    ldapUserFilterMode: "0"
+    ldapUserFilterObjectclass: person
+    ldapUserfilterGroups: ""
+
+spf_dkim_packages:
     - opendkim
+    - opendkim-tools
+    - perl-Getopt-Long
+    - pypolicyd-spf

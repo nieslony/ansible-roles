@@ -1,0 +1,177 @@
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- name: "Install packages {{ packages | join(', ') }}"
+  dnf:
+    name: "{{ packages }}"
+
+- name: "Create services on {{ ipa_server }}"
+  ipa_service:
+    name: "{{ item }}/{{ ansible_fqdn }}"
+    ipa_host: "{{ ipa_server }}"
+  loop:
+    - HTTP
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
+
+- name: "Find HTTP/{{ ansible_fqdn }} in /etc/krb5.keytab"
+  shell:
+    cmd: >
+        echo -e "rkt /etc/krb5.keytab\nlist\n"
+        | ktutil
+        | grep HTTP
+  register:
+    find_http
+  changed_when: false
+  failed_when: false
+
+- name: "Get keytab"
+  block:
+    - name: "Get kerberos credentials"
+      command: kinit -k
+      changed_when: false
+
+    - name: "Get keytab"
+      command:
+        cmd: "ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/krb5.keytab"
+      notify: restart_cups
+  always:
+    - name: Destroy credential cache
+      command: kdestroy
+      changed_when: false
+  when: find_http.rc != 0
+
+- name: "Create certificates folder {{ certs_folder }}"
+  file:
+    path: "{{ certs_folder }}"
+    state: directory
+
+- name: "Create SSL certificates"
+  command:
+    cmd: |
+        ipa-getcert request
+            --keyfile {{ ssl_key }}
+            --certfile {{ ssl_cert }}
+            --after-command="cp {{ ssl_key }} {{ ssl_cert }} /etc/cups/ssl"
+            --wait
+    creates: "{{ ssl_cert }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
+
+- name: "Configure cupsd.conf"
+  lineinfile:
+    path: /etc/cups/cupsd.conf
+    regexp: "{{ item.key }} +{{ item.find | default('') }}"
+    line: "{{ item.key }} {{ item.value }}"
+  loop: "{{ cupsd_options }}"
+  notify: restart_cups
+
+- name: "Slurp cupsd.conf"
+  slurp:
+    path: /etc/cups/cupsd.conf
+  register: cuspd_conf_content
+
+- set_fact:
+    cupsd_conf_content_new: "{{ cuspd_conf_content.content | b64decode }}"
+
+- name: "Set AuthType for locations"
+  set_fact:
+    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
+  vars:
+    search: "<Location {{ item.name }}>\n(\\s*[A-Za-z].*\n)*</Location>"
+    location: "{{ cupsd_conf_content_new | regex_search(search, multiline=True) }}"
+    found_auth_type: "{{ location | regex_search(' *AuthType\\s.*\n', multiline=True) }}"
+    location_new: >-
+        {{
+            (found_auth_type != "")
+            | ternary(
+                (location
+                    | regex_replace(
+                        found_auth_type,
+                        '  AuthType Default\n'
+                    )
+                ),
+                (location
+                    | regex_replace(
+                        '<Location ' + item.name + '>\n',
+                        '<Location ' + item.name + '>\n  AuthType Default\n'
+                    )
+                )
+            )
+        }}
+    found_allow: "{{ location | regex_search(' *Allow\\s.*\n', multiline=True) }}"
+  loop: "{{ locations }}"
+  changed_when: location != location_new
+
+- name: "Set Allow for locations"
+  set_fact:
+    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
+  vars:
+    search: "<Location {{ item.name }}>\n(\\s*[A-Za-z].*\n)*</Location>"
+    location: "{{ cupsd_conf_content_new | regex_search(search, multiline=True) }}"
+    found_allow: "{{ location | regex_search(' *Allow\\s.*\n', multiline=True) }}"
+    location_new: >-
+            {{
+                (found_allow != "")
+                | ternary(
+                    (location
+                        | regex_replace(found_allow, '  Allow ' + item.allow + '\n')
+                    ),
+                    (location
+                        | regex_replace(
+                            '</Location>.*',
+                            '  Allow ' + item.allow + '\n</Location>\n'
+                        )
+                    )
+                )
+            }}
+  loop: "{{ locations }}"
+  changed_when: location != location_new
+
+- name: Write cupsd.conf with new locations
+  copy:
+    dest: /etc/cups/cupsd.conf
+    content: "{{ cupsd_conf_content_new }}"
+  when: cupsd_conf_content_new != (cuspd_conf_content.content | b64decode)
+  notify: restart_cups
+
+- name: "Find {{ admin_group }} group in SystemGroup"
+  replace:
+    path: /etc/cups/cups-files.conf
+    regexp: "^SystemGroup .*{{ admin_group }}.*"
+  check_mode: yes
+  changed_when: no
+  register: admin_group_found
+
+- name: "Add {{ admin_group }} group to SystemGroup"
+  lineinfile:
+    path: /etc/cups/cups-files.conf
+    regexp: "^(SystemGroup .*)"
+    backrefs: yes
+    line: "\\1 {{ admin_group }}"
+  when: admin_group_found.msg | length == 0
+
+- name: "Don't create self signed cert"
+  lineinfile:
+    path: /etc/cups/cups-files.conf
+    regexp: '^#?CreateSelfSignedCerts .*'
+    line: 'CreateSelfSignedCerts no'
+
+- name: "Start cups"
+  service:
+    name: cups
+    state: started
+    enabled: yes
+
+- name: "Open firewall"
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  with_items:
+    - ipp

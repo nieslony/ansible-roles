@@ -1,0 +1,201 @@
+# https://technixleo.com/install-nextcloud-on-centos-alma-rhel/
+# The current PHP memory limit is below the recommended value of 512MB.
+# https://nextcloud-mail.readthedocs.io/en/v0.18.0/admin/
+
+- name: "nextcloud : Install packages {{ packages_nextcloud | join(', ') }}"
+  dnf:
+    name: "{{ packages_nextcloud }}"
+    state: latest
+
+- name: "nextcloud : Create nextcloud folder"
+  stat:
+    path:  /var/www/html/cloud.{{ mydomain }}/nextcloud
+  register: stat_nextcloud
+  changed_when: no
+
+- name: "nextcloud : Download and install software"
+  block:
+    - name: "nextcloud : Download software"
+      get_url:
+        url: https://download.nextcloud.com/server/releases/latest.zip
+        dest: /tmp
+
+    - name: "nextcloud : Unpack software"
+      unarchive:
+        src: /tmp/latest.zip
+        dest: /var/www/html/cloud.{{ mydomain }}
+        remote_src: yes
+
+    - name: "nextcloud : Remove tmp file"
+      file:
+        name: /tmp/latest.zip
+        state: absent
+
+    - name: "nextcloud : chown apache"
+      file:
+        name: /var/www/html/cloud.{{ mydomain }}/nextcloud
+        owner: apache
+        group: apache
+        recurse: yes
+  when: not stat_nextcloud.stat.exists
+
+- name: "nextcloud : configure php.ini"
+  vars:
+    settings:
+      expose_php: "Off"
+      max_execution_time: "360"
+      max_input_time: "180"
+      memory_limit: "-1"
+      upload_max_filesize: "1024MB"
+  ini_file:
+    path: /etc/php.ini
+    section: PHP
+    option: "{{ item.key }}"
+    value: "{{ item.value | string }}"
+  loop: "{{ settings | dict2items }}"
+
+- name: "nextcloud: configure php apcu.ini"
+  ini_file:
+    path: /etc/php.d/40-apcu.ini
+    option: "apc.enable_cli"
+    value: "1"
+
+- name: "nextcloud : Start services"
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - mysqld
+    - php-fpm
+
+- name: "nextcloud : Set some selinux boleans => On"
+  seboolean:
+    name: "{{ item }}"
+    state: yes
+    persistent: yes
+  loop:
+    - httpd_can_network_connect
+    - httpd_unified
+
+- name: "nextcloud : Create database"
+  mysql_db:
+    name: nextcloud
+
+- name: "nextcloud : Create DB user"
+  mysql_user:
+    name: nextcloud
+    priv: "nextcloud.*:ALL"
+    password: "{{ roundcube_password }}"
+
+- name: "nextcloud : Make occ executable"
+  file:
+    path: "{{ nextcloud_occ }}"
+    mode: 0755
+
+- name: "nextcloud : copy apache config"
+  template:
+    src: nextcloud.conf
+    dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
+  notify: restart_httpd
+
+- name: "nextcloud : Setup nextcloud with occ"
+  become: yes
+  become_user: apache
+  command:
+    cmd: >-
+        {{ nextcloud_occ }} maintenance:install
+            --database=mysql
+            --database-name=nextcloud
+            --database-host=localhost
+            --database-user=nextcloud
+            --database-pass={{ roundcube_password }}
+            --admin-user={{ nextcloud_admin_user }}
+            --admin-pass={{ nextcloud_admin_password }}
+            --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
+    creates: /var/www/html/cloud.{{ mydomain }}/nextcloud/config/config.php
+
+# see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
+- name: "nextcloud : config system"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} config:system:set {{ item }}"
+  with_items:
+    - "trusted_domains 1 --value=cloud.{{ mydomain }}"
+    - "overwrite.cli.url --value=https://cloud.{{ mydomain }}/nextcloud"
+    - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
+
+- name: "nextcloud : Update .htaccess"
+  copy:
+    src: nextcloud_htaccess
+    dest: "/var/www/html/cloud.{{ mydomain }}/nextcloud/.htaccess"
+
+- name: "nextcloud : Get admin's display name"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} user:setting nc-admin settings display_name"
+  register: admin_displayname
+  changed_when: no
+
+- name: "nextcloud : Set admin's display name"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_admin_displayname }}'"
+  when: admin_displayname.stdout != nextcloud_admin_displayname
+
+- name: "nextcloud : Find installed apps"
+  find:
+    paths: "/var/www/html/cloud.{{ mydomain }}/nextcloud/apps"
+    recurse: no
+    file_type: directory
+  register: installed_apps
+
+- name: "nextcloud : get installed apps"
+  set_fact:
+    installed_apps: >-
+        {{
+            installed_apps.files
+            | selectattr("path", "defined")
+            | map(attribute='path')
+            | map('regex_replace', '^.*/', '')
+        }}
+
+- name: "nextcloud : Install apps"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} app:install {{ item }}"
+  with_items: "{{ nextcloud_install_apps }}"
+  when: not item in installed_apps
+
+- name: "nextcloud : Enable apps"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} app:enable {{ item }}"
+  with_items: "{{ nextcloud_enable_apps }}"
+
+- name: "nextcloud : Configure app user_saml"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} saml:config:set --general-uid_mapping REMOTE_USER 1"
+
+- name: "nextcloud : Configure app user_saml (2)"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} config:app:set user_saml {{ item.key}} --value {{ item.value }}"
+  with_items: "{{ nextcloud_user_saml_config | dict2items }}"
+
+- name: "nextcloud : Creeate ldap config"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:create-empty-config"
+
+- name: "nextcloud : Configure app user_ldap"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:set-config s01 {{ item.key }} '{{ item.value }}'"
+  with_items: "{{ nextcloud_ldap_config | dict2items }}"
+
+- name: "nextcloud : Test app user_ldap"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:test-config s01"

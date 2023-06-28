@@ -1,0 +1,26 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName={{ organization }} (${email})
+Enabled=true
+Parent=autoconf
+
+[Authentication]
+Host=mail.linux.lab
+Method=GSSAPI
+Port=587
+ProxyUid=system-proxy
+RememberPassword=true
+User=${USER}
+CredentialName=
+IsExternal=false
+
+[Security]
+Method=starttls-on-standard-port
+
+[Mail Transport]
+BackendName=smtp
+
+[Smtp Backend]
+ReencodeData=false

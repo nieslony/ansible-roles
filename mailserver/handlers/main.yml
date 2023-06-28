@@ -1,16 +1,30 @@
 # handlers file for nextcloud
+- name: Recreate selinux module postfix-extra
+  command: checkmodule -M -m -o /var/local/selinux-modules/postfix-extra.mod /var/local/selinux-modules/postfix-extra.te
+  listen: selinux_module_postfix_extra
+
+- name: Package selinux module
+  command: semodule_package -o /var/local/selinux-modules/postfix-extra.pp -m /var/local/selinux-modules/postfix-extra.mod
+  listen: selinux_module_postfix_extra
+
+- name: Install selinux module
+  command: semodule -i /var/local/selinux-modules/postfix-extra.pp
+  listen: selinux_module_postfix_extra
+
 - name: Restart postfix
   service:
     name: postfix
     state: restarted
+  listen: restart_postfix
 
 - name: Restart cyrus-imapd
   service:
     name: cyrus-imapd
     state: restarted
+  listen: restart_cyrus_imapd
 
-- name: Restart httpd
+- name: Restart opendkim
   service:
-    name: httpd
+    name: opendkim
     state: restarted
-  listen: restart_httpd
+  listen: restart_opendkim

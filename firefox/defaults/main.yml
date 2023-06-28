@@ -1,0 +1,13 @@
+# defaults file for firefox
+trusted_uris: ["{{ ansible_domain }}"]
+delegation_uris: []
+
+managed_bookmarks: []
+    # - name: "Nextcloud"
+    #   url: "http://cloud.test.lab"
+    # - name: "Printserver"
+    #   url: "http://printserver.linux.lab"
+    # - name: "Folder"
+    #   children:
+    #     - name: "Child"
+    #       url: "http://host"

@@ -6,7 +6,7 @@
 - name: "postfix : Enable submission service"
   command:
     cmd: >
-        postconf -Me submission/inet="
+        postconf -Me submission/inet='
         submission inet n - n - - smtpd -v -o
         {{
             master_cfg_opts.submission_inet.keys()
@@ -14,7 +14,7 @@
                 | map('join', '=')
                 | join(' -o ')
         }}
-        "
+        '
   changed_when: false
 
 - name: "postfix : Create service smtp/{{ ansible_fqdn }}"
@@ -59,3 +59,14 @@
   copy:
     src: smtpd.conf
     dest: /etc/sasl2
+
+- name: "postfix : Create folder for extra selinux modules"
+  file:
+    path: /var/local/selinux-modules
+    state: directory
+
+- name: "postfix : copy postfix-extra.te"
+  copy:
+    src: postfix-extra.te
+    dest: /var/local/selinux-modules
+  notify: selinux_module_postfix_extra

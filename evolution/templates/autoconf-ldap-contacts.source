@@ -1,0 +1,40 @@
+[Autoconfig]
+Revision=1
+
+[Data Source]
+DisplayName=ldap addresses
+Enabled=true
+Parent=ldap-stub
+
+[Offline]
+StaySynchronized=false
+
+[Contacts Backend]
+IncludeMe=false
+
+[Security]
+Method=starttls
+
+[Authentication]
+Host={{ ldap_servers | first }}
+Method=GSSAPI
+Port=389
+ProxyUid=system-proxy
+RememberPassword=true
+User=${USER}
+CredentialName=
+IsExternal=false
+
+[LDAP Backend]
+CanBrowse=false
+Filter=
+Limit=100
+RootDn={{ ldap_base_dn }}
+Scope=subtree
+
+[Address Book]
+BackendName=ldap
+Order=0
+
+[Autocomplete]
+IncludeMe=true

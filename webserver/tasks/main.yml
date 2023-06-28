@@ -1,5 +1,7 @@
----
 # tasks file for webserver
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: Create logocal volume
   block:
     - name: Create volume
@@ -25,57 +27,114 @@
     name: "{{ packages }}"
     state: latest
 
-- name: Create service
+- name: "Create group apache"
+  group:
+    name: apache
+    system: yes
+
+- name: "Create apache user"
+  user:
+    name: apache
+    create_home: no
+    group: apache
+    home: /usr/share/httpd
+    shell: /sbin/nologin
+    system: yes
+
+- name: "Create CNAMES and host objects remote"
+  block:
+    - name: "Create CNAMES for vhosts {{ vhosts }}"
+      ipadnsrecord:
+        ipaadmin_password: "{{ ipaadmin_password }}"
+        zone_name: "{{ item.split('.')[1:] | join('.') }}"
+        record_type: CNAME
+        cname_hostname: "{{ ansible_fqdn }}."
+        name: "{{ item | split('.') | first }}"
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+
+    - name: "Create host objects {{ vhosts }}"
+      ipahost:
+        ipaadmin_password: "{{ ipaadmin_password }}"
+        name: "{{ item }}"
+        managedby_host: "{{ ansible_fqdn }}"
+        state: present
+        random: yes
+        update_password: on_create
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+  when: ipaadmin_password is defined
+
+- name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
   ipa_service:
     name: "HTTP/{{ ansible_fqdn }}"
+    ipa_host: "{{ ipa_server }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
 
-- block:
-    - name: Create credential cache
-      command: kinit -k
-      changed_when: false
+- name: "Get keytab"
+  shell:
+    cmd: |
+        kinit -k
+        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/httpd/krb5.keytab
+        kdestroy
+    creates: /etc/httpd/krb5.keytab
 
-    - name: Get keytab
-      command:
-        cmd: "ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }}"
-        creates: "{{ keytab }}"
-
-    - name: Get SSL certificate
-      command:
-        cmd: "ipa-getcert request -k {{ ssl_key }} -f {{ ssl_cert }} --wait"
-        creates: "{{ ssl_cert }}"
-  always:
-    - name: Destroy credential cache
-      command: kdestroy
-      changed_when: false
-
-- name: "Change owner of {{ keytab }} owner: apache"
+- name: "Chown keytab"
   file:
-    path: "{{ keytab }}"
+    path: /etc/httpd/krb5.keytab
     owner: apache
+    mode: 0600
 
-- name: "Change owner of {{ ssl_key }} owner: apache"
-  file:
-    path: "{{ ssl_key }}"
-    owner: apache
-
-- name: Set ssl key in apache config
-  lineinfile:
-    path: /etc/httpd/conf.d/ssl.conf
-    regexp: "^#* *SSLCertificateKeyFile "
-    line: "SSLCertificateKeyFile {{ ssl_key }}"
-
-- name: Set ssl cert in apache config
-  lineinfile:
-    path: /etc/httpd/conf.d/ssl.conf
-    regexp: "^#* *SSLCertificateFile "
-    line: "SSLCertificateFile {{ ssl_cert }}"
+- name: "Get SSL certificate for webserver"
+  command:
+    cmd: |
+        ipa-getcert request
+            --keyfile {{ ssl_key_file }}
+            --certfile {{ ssl_cert_file }}
+            --key-owner apache
+            --cert-owner apache
+            --principal host/{{ ansible_fqdn }}
+            --dns {{ (vhosts + [ansible_fqdn]) | unique | join(' --dns ') }}
+            --wait
+    creates: "{{ ssl_cert_file }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+  notify: restart_httpd
 
 - name: Copy default_vhost.conf
   copy:
     src: default_vhost.conf
     dest: /etc/httpd/conf.d/default_vhost.conf
+  notify: restart_httpd
+
+- name: Create document root for vhosts
+  file:
+    path: "/var/www/html/{{ item }}"
+    state: directory
+  loop: "{{ vhosts }}"
+
+- name: Copy vhost configuration files
+  template:
+    src: vhost.conf
+    dest: /etc/httpd/conf.d/{{ item }}.conf
+  loop: "{{ vhosts }}"
+  notify: restart_httpd
+
+- name: Find ssl.conf
+  stat:
+    path: /etc/httpd/conf.d/ssl.conf
+  register: stat_ssl_conf
+  changed_when: no
+
+- name: "Rename ssl.conf"
+  command:
+    cmd: mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.disabled
+    creates: /etc/httpd/conf.d/ssl.conf.disabled
+  when: stat_ssl_conf.stat.exists
+  notify: restart_httpd
 
 - name: Open http/https in firewall
   firewalld:

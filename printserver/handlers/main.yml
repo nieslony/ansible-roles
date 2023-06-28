@@ -1,0 +1,5 @@
+- name: Restart cupsd
+  listen: restart_cups
+  service:
+    name: cups
+    state: restarted
