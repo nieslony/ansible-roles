@@ -1,0 +1,10 @@
+module my-gdm 1.0;
+
+require {
+        type xdm_t;
+        class capability2 bpf;
+}
+
+#============= xdm_t ==============
+allow xdm_t self:capability2 bpf;
+my-gdm.te (END)
