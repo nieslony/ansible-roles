@@ -85,7 +85,7 @@
 
 - name: Find NICS for dynamic DNS updates
   set_fact:
-    dyn_dns_nics: "{{ ansible_interfaces | select('match', '^(enp|wlp|eth|wlan)') | list | join(', ') }}"
+    dyn_dns_nics: "{{ ansible_interfaces | select('match', '^(enp|wlp|eth|wlan)') | list | sort | join(', ') }}"
 
 - name: "Enable NICs for auto DNS updates: {{ dyn_dns_nics }}"
   ini_file:
