@@ -1,0 +1,146 @@
+---
+# tasks file for developer-workstation
+- name: Creeate storage for libvirt
+  block:
+    - name: Create LVs
+      lvol:
+        vg: system
+        lv: "{{ item.name }}"
+        size: "{{ item.size }}"
+        shrink: no
+      loop: "{{ logical_volumes_devel }}"
+
+    - name: Create filesystems
+      filesystem:
+        fstype: xfs
+        dev: "/dev/system/{{ item.name }}"
+      loop: "{{ logical_volumes_devel }}"
+
+    - name: Create mount points
+      file:
+        path: "{{ item.mount_point }}"
+        state: directory
+      loop: "{{ logical_volumes_devel }}"
+
+    - name: Mount devel volumes
+      mount:
+        path: "{{ item.mount_point }}"
+        src: "/dev/system/{{ item.name }}"
+        fstype: xfs
+        state: mounted
+      loop: "{{ logical_volumes_devel }}"
+
+    - name: Resize filesystems
+      filesystem:
+        fstype: xfs
+        dev: "/dev/system/{{ item.name }}"
+        resizefs: yes
+      loop: "{{ logical_volumes_devel }}"
+  when:  ansible_lvm.vgs.system.size_g|int > 200
+
+- name: "Install CentOS devel packages: {{ rpm_devel_packages_centos | join(', ') }}"
+  dnf:
+    name: "{{ rpm_devel_packages_centos }}"
+    state: latest
+  when: ansible_distribution == "CentOS"
+
+- name: "Install Fedora devel packages: {{ rpm_devel_packages_fedora | join(', ') }}"
+  dnf:
+    name: "{{ rpm_devel_packages_fedora }}"
+    state: latest
+  when: ansible_distribution == "Fedora"
+
+- name: "Install libvirt gem"
+  gem:
+    name: "nokogiri"
+    version: "1.6.8"
+
+  gem:
+    name: libvirt
+    include_dependencies: no
+  when: ansible_distribution == "CentOS"
+
+- name: Create services
+  ipa_service:
+    name: "{{ item }}/{{ ansible_fqdn }}"
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+  loop:
+    - qemu
+    - libvirt
+
+- name: Get keytabs
+  shell:
+    cmd: "kinit -k ; ipa-getkeytab -p {{ item }}/{{ ansible_fqdn }} -k /etc/{{ item }}/krb5.keytab ; kdestroy"
+    creates: "/etc/{{ item }}/krb5.keytab"
+  loop:
+    - qemu
+    - libvirt
+
+- name: "Enable and start libvirtd"
+  service:
+    name: libvirtd
+    enabled: yes
+    state: started
+
+- name: "Enable and start libvirtd"
+  service:
+    name: libvirt-guests
+    enabled: yes
+    state: started
+
+- name: Make sure getting subids from sssd
+  lineinfile:
+    path: /etc/nsswitch.conf
+    line: "subid:     sss"
+    regexp: "^subid:.*sss"
+    state: present
+  notify: restart_sssd
+
+- name: Set libvirt default URI
+  copy:
+    src: libvirt_url.sh
+    dest: /etc/profile.d
+
+- name: Configure .gitconfig
+  copy:
+    src: create-gitconfig.sh
+    dest: /etc/profile.d
+
+- name: Configure squid
+  lineinfile:
+    path: /etc/squid/squid.conf
+    regexp: "{{ item | regex_replace(' +', '\\s+') }}"
+    line: "{{ item }}"
+  loop: "{{ squid_conf }}"
+  notify: restart_squid
+
+- name: Start and enable squid
+  service:
+    name: squid
+    enabled: yes
+    state: started
+
+- name: Enable firewalld in firewall
+  firewalld:
+    service: squid
+    permanent: yes
+    state: enabled
+    zone: libvirt
+
+#- name: Create symlink for classic snaps
+  #file:
+    #src: /var/lib/snapd/snap
+    #dest: /snap
+    #state: link
+
+#- name: Start and enable snapd
+  #service:
+    #name: snapd
+    #enabled: yes
+    #state: started
+
+#- name: Install netbeans
+  #snap:
+    #name: netbeans
+    #classic: yes
