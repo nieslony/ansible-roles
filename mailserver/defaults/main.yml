@@ -113,7 +113,10 @@ packages_roundcube:
 
 roundcube_password: "Heexeb0AHeiz7eca"
 
+php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+
 packages_nextcloud:
+    - "@php:remi-8.1"
     - bash-completion
     - bzip2
     - curl
