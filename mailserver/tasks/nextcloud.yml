@@ -2,6 +2,12 @@
 # The current PHP memory limit is below the recommended value of 512MB.
 # https://nextcloud-mail.readthedocs.io/en/v0.18.0/admin/
 
+- name: "Add PHP remi repo"
+  dnf:
+    name: "{{ php_remi_repo }}"
+    disable_gpg_check: yes
+  when: php_remi_repo != ""
+
 - name: "nextcloud : Install packages {{ packages_nextcloud | join(', ') }}"
   dnf:
     name: "{{ packages_nextcloud }}"
