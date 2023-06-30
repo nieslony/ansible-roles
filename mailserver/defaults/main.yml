@@ -154,18 +154,20 @@ nextcloud_admin_user: nc-admin
 nextcloud_admin_displayname: "Nextcloud Administrator"
 nextcloud_admin_password: "AdminPassword.1"
 nextcloud_install_apps:
-    - user_saml
-    - tasks
+    - announcementcenter
     - calendar
     - contacts
-    - richdocuments
-    - announcementcenter
-    - groupfolders
     - deck
+    - groupfolders
     - mail
     - notes
+    - richdocuments
+    - secrets
     - spreed
+    - tasks
+    - user_saml
 nextcloud_enable_apps:
+    - twofactor_totp
     - user_ldap
 nextcloud_user_saml_config:
     general-require_provisioned_account: 1
