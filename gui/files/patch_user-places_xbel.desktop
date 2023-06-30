@@ -1,0 +1,5 @@
+[Desktop Entry]
+Type=Application
+Name=Patch user-places.xbel
+NoDisplay=true
+Exec=bash /etc/skel/.bashrc.d/patch_user-places_xbel.sh

@@ -1,0 +1,13 @@
+---
+# handlers file for developer-workstation
+- name: "Restart sssd"
+  service:
+    name: sssd
+    state: restarted
+  listen: restart_sssd
+
+- name: "Restart squid"
+  service:
+    name: squid
+    state: restarted
+  listen: restart_squid

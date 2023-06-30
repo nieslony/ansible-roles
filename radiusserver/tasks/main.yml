@@ -1,0 +1,91 @@
+# tasks file for radiusserver
+
+- name: "Install packages: {{ packages | join(', ') }}"
+  package:
+    name: "{{ packages }}"
+
+- name: Create certs folder
+  file:
+    name: "{{ certs_dir }}"
+    state: directory
+
+- name: Install server certificate
+  block:
+    - name: Create credential cache
+      command: kinit -k
+      changed_when: no
+
+    - name: Get SSL certificate
+      command:
+        cmd: "ipa-getcert request -k {{ ssl_key }} -f {{ ssl_cert }} --wait"
+        creates: "{{ ssl_cert }}"
+  always:
+    - name: Destroy credential cache
+      command: kdestroy
+      changed_when: no
+
+- name: Copy ca.crt
+  copy:
+    src: /etc/ipa/ca.crt
+    dest: "{{ certs_dir }}/ca.pem"
+    remote_src: yes
+
+- name: Create dh params
+  openssl_dhparam:
+    path: "{{ certs_dir }}/dh"
+
+- name: Change file group
+  file:
+    path: "{{ item }}"
+    group: radiusd
+    mode: g+r
+  with_items:
+    - "{{ ssl_cert }}"
+    - "{{ ssl_key }}"
+
+- name: Configure radiusd.conf
+  ini_file:
+    path: /etc/raddb/radiusd.conf
+    section:
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  with_items:
+    - { key: "certdir", value: "{{ certs_dir }}" }
+    - { key: "cadir", value: "{{ certs_dir }}" }
+  notify: Restart radiusd
+
+- name: Configure eap
+  lineinfile:
+    path: /etc/raddb/mods-available/eap
+    state: present
+    regexp: '(\s*)#?(\s)*{{ item.key }}(\s*)='
+    backrefs: yes
+    line: '\1\2{{ item.key }}\3={{ item.value }}'
+  with_items:
+    - { key: "private_key_file", value: "${certdir}/server.key" }
+    - { key: "certificate_file", value: "${certdir}/server.crt" }
+    - { key: "ca_file", value: "{{ ca_cert }}" }
+  notify: Restart radiusd
+
+- name: Install client-hostap.conf
+  template:
+    src: client-hostap.conf
+    dest: /etc/raddb/client-hostap.conf
+
+- name: Include hostap.conf
+  lineinfile:
+    path: /etc/raddb/clients.conf
+    line: "$INCLUDE client-hostap.conf"
+  notify: Restart radiusd
+
+- name: Start service radiusd
+  service:
+    name: radiusd
+    enabled: yes
+    state: started
+
+- name: Open firewall
+  firewalld:
+    service: radius
+    permanent: yes
+    state: enabled

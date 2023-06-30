@@ -1,0 +1,18 @@
+- name: Get used space in VG system
+  command:
+    cmd: "vgs fedora --units G --reportformat json"
+  register: vgs_result
+
+- name: Calculate home size
+  set_fact:
+    home_size: "{{ ansible_lvm.lvs.home.size_g }}"
+    free: "{{ (vgs_result.stdout | from_json).report[0].vg[0].vg_free | regex_search('^[0-9]*') }}"
+    home_new_size: "{{ home_size|float + free|float - 0.1*vg_system_size|float }}"
+
+- name: "Resize home"
+  lvol:
+    vg: system
+    lv: home
+    size: "{{ home_new_size }}G"
+    resizefs: yes
+  ignore_errors: yes

@@ -24,7 +24,7 @@
   set_fact:
     mail_server: "{{ mail_server if mail_server is defined else mx_record.stdout }}"
     ipa_server: "{{ ipa_server if ipa_server is defined else ipa_server_record.stdout }}"
-    ldap_servers: "{{ ldap_servers if ldap_servers is defined else ldap_record.stdout_lines }}"
+    ldap_servers: "{{ ldap_servers if ldap_servers is defined else ldap_record.stdout_lines | sort }}"
     organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
 
     ldap_base_dn: >-

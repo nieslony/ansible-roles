@@ -1,0 +1,167 @@
+# tasks file for gui
+- name: Find mount points
+  shell: "df -T | awk '/ext4|xfs|btrfs/ { print $NF; }'"
+  register: active_mount_points
+  changed_when: false
+
+- block:
+  - name: Tiny VG system
+    set_fact:
+        logical_volumes: "{{ logical_volumes_small }}"
+    when: vg_system_size|float <= 30
+
+  - name: Mid size VG system
+    set_fact:
+        logical_volumes: "{{ logical_volumes_mid }}"
+    when: vg_system_size|float > 30.0 and vg_system_size|float <= 100.0
+
+  - name: Large VG system
+    set_fact:
+        logical_volumes: "{{ logical_volumes_large }}"
+    when: vg_system_size|float > 100.0 and vg_system_size|float <= 250.0
+
+  - name: Huge VG system
+    set_fact:
+        logical_volumes: "{{ logical_volumes_huge }}"
+    when: vg_system_size|float > 250.0
+
+  - name: Resize volumes
+    lvol:
+        vg: system
+        lv: "{{ item.name }}"
+        size: "{{ item.size }}"
+        resizefs: yes
+    when: item.mount_point in active_mount_points.stdout_lines
+    loop: "{{ logical_volumes }}"
+    ignore_errors: yes
+  when: ansible_lvm.vgs.system is defined
+
+- debug:
+    msg: "We will extend home later if more than 10% free in VG system"
+  notify: resize_home
+  changed_when: ansible_lvm.vgs.system is defined
+    and
+    (ansible_lvm.vgs.system.free_g|float / ansible_lvm.vgs.system.size_g|float > 0.1)
+
+- name: Enable repos
+  command: "subscription-manager repos --enable {{ item }}"
+  with_items: "{{ enabled_centos8_repos }}"
+  when: foreman['content_view'] == "Centos8_Stream_Extended"
+
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
+
+- name: Install updates
+  dnf:
+    name: "*"
+    state: latest
+
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
+
+- name: "Install CentOS packages: {{ gui_rpm_packages_centos | join(', ') }}"
+  dnf:
+    name: "{{ gui_rpm_packages_centos }}"
+    state: latest
+    exclude: "{{ exclude_packages }}"
+  when: ansible_distribution == "CentOS"
+
+- name: "Install Fedora packages: {{ gui_rpm_packages_fedora | join(', ') }}"
+  dnf:
+    name: "{{ gui_rpm_packages_fedora }}"
+    state: latest
+    exclude: "{{ exclude_packages }}"
+  when: ansible_distribution == "Fedora"
+
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
+
+- name: "Remove packages: {{ remove_packages | join(', ') }}"
+  dnf:
+    name: "{{ remove_packages }}"
+    state: absent
+
+- name: "Install commercial packages {{ commercial_packages | join(', ') }}"
+  package:
+    name: "{{ commercial_packages }}"
+    state: present
+
+- name: Disable external repositories
+  include_role:
+    name: 01-no-external-repositories
+
+- name: Install cups client.conf
+  template:
+    src: client.conf
+    dest: /etc/cups/client.conf
+    group: lp
+
+- name: "Get current systemd default"
+  command: "systemctl get-default"
+  changed_when: false
+  register: systemdefault
+
+- name: Enable display manager
+  command: systemctl set-default graphical.target
+  when: "'graphical' not in systemdefault.stdout"
+
+- name: Disable sddm
+  service:
+    name: sddm
+    enabled: no
+
+- name: Enable gdm
+  service:
+    name: gdm
+    enabled: yes
+
+- name: Set default session
+  ini_file:
+    path: /etc/gdm/custom.conf
+    section: daemon
+    option: DefaultSession
+    value: plasma.desktop
+
+- name: Is gdm running
+  command: systemctl is-active gdm.service
+  register: gdm_status
+  changed_when: "'inactive' in gdm_status.stdout"
+  failed_when: false
+  notify: start_gdm
+
+- name: Create folder in /etc/skel
+  file:
+    path: "/etc/skel/{{ item }}"
+    state: directory
+  loop:
+    - ".config/gtk-3.0"
+    - ".local/share"
+    - ".bashrc.d"
+
+- name: Install nautilus bookmarks
+  copy:
+    src: bookmarks
+    dest: /etc/skel/.config/gtk-3.0/bookmarks
+
+- name: Install user-placel.xbel
+  copy:
+    src: user-places.xbel
+    dest: /etc/skel/.local/share
+
+- name: Install bashrc.d scripts
+  copy:
+    src: "patch_user-places_xbel.sh"
+    dest: /etc/skel/.bashrc.d
+
+- name: Install patch_user-places_xbel.desktop
+  copy:
+    src: patch_user-places_xbel.desktop
+    dest: /etc/xdg/autostart
+
+# PASSWORD=pwd systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 $( lsblk --fs -lp | awk '/crypto_LUKS/ { print $1; }' )
+# sed -i -E 's/([a-z0-9\-]+)\s+([A-Za-z0-9=\-]+)\s*.*/\1 \2 - tpm2-device=auto/' /etc/crypttab
+# dracut -f
+

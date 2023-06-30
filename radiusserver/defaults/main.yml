@@ -1,0 +1,14 @@
+# defaults file for radiusserver
+hostap_ip_addr: host_app_ip
+hostap_secret: thisistopsecret
+
+packages:
+  - freeradius
+  - freeradius-ldap
+  - freeradius-utils
+
+certs_dir:  /etc/pki/radius
+ssl_key: "{{ certs_dir }}/server.key"
+ssl_cert: "{{ certs_dir }}/server.crt"
+ca_cert: /etc/ipa/ca.crt
+

@@ -1,0 +1,52 @@
+# handlers file for gui
+- name: Get used space in VG system
+  command:
+    cmd: "vgs system --units G --reportformat json"
+  register: vgs_result
+  listen: resize_home
+  when: ansible_lvm.vgs.system is defined
+  changed_when: no
+
+- name: "Resize home"
+  vars:
+    cur_home_size: "{{ ansible_lvm.lvs.home.size_g }}"
+    cur_free: "{{ (vgs_result.stdout | from_json).report[0].vg[0].vg_free | regex_search('^[0-9]*') }}"
+    rest_size: "{{ vg_system_size|float - cur_home_size|float - cur_free|float }}"
+    home_new_size: "{{ vg_system_size|float - 0.15*vg_system_size|float - rest_size|float }}"
+  debug:
+    msg: |
+        vg_system_size: {{ vg_system_size }}
+        10% vg_system_size: {{ vg_system_size|float * 0.1 }}
+        rest_size: {{ rest_size }}
+        home_new_size: {{ home_new_size }}
+  listen: resize_home
+  when: ansible_lvm.vgs.system is defined
+
+- name: "Resize home"
+  vars:
+    cur_home_size: "{{ ansible_lvm.lvs.home.size_g }}"
+    cur_free: "{{ (vgs_result.stdout | from_json).report[0].vg[0].vg_free | regex_search('^[0-9]*') }}"
+    rest_size: "{{ vg_system_size|float - cur_home_size|float - cur_free|float }}"
+    home_new_size: "{{ vg_system_size|float - 0.15*vg_system_size|float - rest_size|float }}"
+  lvol:
+    vg: system
+    lv: home
+    size: "{{ home_new_size }}G"
+    resizefs: yes
+  ignore_errors: yes
+  listen: resize_home
+  when: ansible_lvm.vgs.system is defined
+
+- name: "gui: Start gdm"
+  service:
+    name: gdm
+    state: started
+  listen: start_gdm
+
+
+# size = free + rest + home
+# rest = size - free - home
+
+# nhome = size - size*0.1 - rest
+
+
