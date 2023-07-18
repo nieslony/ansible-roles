@@ -19,4 +19,4 @@
   command:
     chdir: /etc
     cmd: etckeeper vcs commit -m 'Initial import'
-  when: stat_etc_git.isdir is not defined
+  when: stat_etc_git.stat.isdir
