@@ -1,2 +1,17 @@
----
-# tasks file for arachnecdl
+- name: "Add repo {{ arachnecdl_repo_url }}"
+  get_url:
+    url: "{{ arachnecdl_repo_url }}"
+    dest: /etc/yum.repos.d
+  when: arachnecdl_repo_url != ""
+
+- name: "Install package"
+  dnf:
+    name: ArachneConfigDownloader
+    state: latest
+
+- name: "Set arachne server {{ arachnecdl_server_url }}"
+  ini_file:
+    path: "/etc/xdg/Claas Nieslony/Arachne Config Downloader.conf"
+    section: General
+    option: adminServerurl
+    value: "{{ arachnecdl_server_url }}"
