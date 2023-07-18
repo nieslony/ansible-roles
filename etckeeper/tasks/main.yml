@@ -1,0 +1,22 @@
+- name: "Install etckeeper"
+  dnf:
+    name: etckeeper
+    state: latest
+
+- name: "Find /etc/.git"
+  stat:
+    path: /etc/.git
+  register: stat_etc_git
+
+- name: "Init etckeeper"
+  command:
+    chdir: /etc
+    cmd: etckeeper init
+    creates: /etc/.git
+  register: etc_etckeeper_init
+
+- name: "Initial commit"
+  command:
+    chdir: /etc
+    cmd: etckeeper vcs commit -m 'Initial import'
+  when: stat_etc_git.stat.isdir is not defined
