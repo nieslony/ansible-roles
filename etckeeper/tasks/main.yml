@@ -3,6 +3,11 @@
     name: etckeeper
     state: latest
 
+- name: "Find /etc/.git"
+  stat:
+    path: /etc/.git
+  register: stat_etc_git
+
 - name: "Init etckeeper"
   command:
     chdir: /etc
@@ -14,4 +19,4 @@
   command:
     chdir: /etc
     cmd: etckeeper vcs commit -m 'Initial import'
-  when: etc_etckeeper_init is defined
+  when: not stat_etc_git.isdir
