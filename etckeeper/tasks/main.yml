@@ -1,0 +1,17 @@
+- name: "Install etckeeper"
+  dnf:
+    name: etckeeper
+    state: latest
+
+- name: "Init etckeeper"
+  command:
+    chdir: /etc
+    cmd: etckeeper init
+  creates: /etc/.git
+  register: etc_etckeeper_init
+
+- name: "Initial commit"
+  command:
+    chdir: /etc
+    cmd: etckeeper vcs commit -m 'Initial import'
+  when: etc_etckeeper_init is defined
