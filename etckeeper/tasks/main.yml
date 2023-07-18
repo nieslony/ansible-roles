@@ -7,7 +7,7 @@
   command:
     chdir: /etc
     cmd: etckeeper init
-  creates: /etc/.git
+    creates: /etc/.git
   register: etc_etckeeper_init
 
 - name: "Initial commit"
