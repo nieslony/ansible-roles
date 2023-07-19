@@ -1,0 +1,2 @@
+arachnecdl_repo_url: ""
+arachnecdl_server_url: "https://arachne.{{ ansible_domain }}/arachne"
