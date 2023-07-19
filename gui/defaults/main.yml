@@ -73,6 +73,7 @@ gui_deb_packages:
 exclude_packages:
   - libvirt-daemon
   - gnome-boxes
+  - gstreamer1-plugins-ugly-free
 
 remove_packages:
   - gnome-initial-setup
