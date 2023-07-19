@@ -7,6 +7,11 @@
     name: firefox
     state: latest
 
+- name: Find /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+  stat:
+    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+  register: find_all_ipa
+
 - name: Set uris trusted for negotiate
   lineinfile:
     path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
@@ -14,6 +19,7 @@
         pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | join(', ') }}");
     regex: |
         ^pref\("network.negotiate-auth.trusted-uris".*
+  when: find_all_ipa.stat.exists
 
 - name: Set uris trusted for delegation
   lineinfile:
@@ -22,6 +28,7 @@
         pref("network.negotiate-auth.delegation-uris", "{{ delegation_uris | join(', ') }}");
     regex: |
         ^pref\("network.negotiate-auth.delegation-uris".*
+  when: find_all_ipa.stat.exists
 
 - name: Create policies.json
   copy:
