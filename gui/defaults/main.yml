@@ -74,6 +74,7 @@ exclude_packages:
   - libvirt-daemon
   - gnome-boxes
   - totem
+  - gstreamer1-plugins-ugly-free
 
 remove_packages:
   - gnome-initial-setup

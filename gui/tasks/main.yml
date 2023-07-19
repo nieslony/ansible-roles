@@ -64,7 +64,7 @@
 - name: "Install CentOS packages: {{ gui_rpm_packages_centos | join(', ') }}"
   dnf:
     name: "{{ gui_rpm_packages_centos }}"
-    state: latest
+    state: present
     nobest: true
     skip_broken: true
     exclude: "{{ exclude_packages }}"
