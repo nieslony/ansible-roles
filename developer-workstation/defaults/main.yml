@@ -8,9 +8,8 @@ rpm_devel_extra_packages_centos:
 
 rpm_devel_extra_packages_fedora:
   - "@developer-workstation-environment"
-  - "@postgresql:12/server"
+  - "@postgresql:15/server"
   - "@virtualization"
-  - mkdocs
   - rubygem-ruby-libvirt
 
 rpm_devel_packages:
@@ -50,7 +49,6 @@ rpm_devel_packages:
   - rubygem-rexml
   - rubygems-devel
   - shyaml
-  #- snapd
   - squid
   - vagrant
   - virt-install

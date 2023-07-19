@@ -11,6 +11,7 @@
   stat:
     path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
   register: find_all_ipa
+  changed_when: false
 
 - name: Set uris trusted for negotiate
   lineinfile:
