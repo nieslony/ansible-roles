@@ -110,7 +110,7 @@
 - name: Configure squid
   lineinfile:
     path: /etc/squid/squid.conf
-    regexp: "{{ item | regex_replace(' +', '\\s+') }}"
+    regexp: "{{ item | regex_replace(' +', '\\\\s') }}"
     line: "{{ item }}"
   loop: "{{ squid_conf }}"
   notify: restart_squid
@@ -128,19 +128,3 @@
     state: enabled
     zone: libvirt
 
-#- name: Create symlink for classic snaps
-  #file:
-    #src: /var/lib/snapd/snap
-    #dest: /snap
-    #state: link
-
-#- name: Start and enable snapd
-  #service:
-    #name: snapd
-    #enabled: yes
-    #state: started
-
-#- name: Install netbeans
-  #snap:
-    #name: netbeans
-    #classic: yes
