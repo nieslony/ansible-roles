@@ -68,10 +68,8 @@ gui_rpm_packages_centos: "{{ gui_rpm_extra_packages_centos + gui_rpm_packages }}
 gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages }}"
 
 commercial_packages:
-#  - google-chrome-stable
+  - google-chrome-stable
   - skypeforlinux
-  - teams
-#  - zoom
 
 gui_deb_packages:
   - gnome-session
