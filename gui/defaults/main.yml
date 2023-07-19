@@ -28,29 +28,22 @@ logical_volumes_huge:
   - { name: "root",    size: "50G", mount_point: / }
 
 gui_rpm_extra_packages_centos:
-  - "@workstation-product-environment"
-  - "@kde-desktop-environment"
-  - flac
-  - libreoffice-base
-  - libreoffice-calc
-  - libreoffice-draw
-  - libreoffice-impress
-  - libreoffice-math
-  - libreoffice-writer
+  - libreoffice
 
 gui_rpm_extra_packages_fedora:
-  - "@gnome-desktop"
-  - "@kde-desktop"
-  - "@workstation-product-environment"
   - "@libreoffice"
   - abcde
   - gnome-network-displays
 
 gui_rpm_packages:
+  - "@gnome-desktop"
+  - "@kde-desktop"
+  - "@workstation-product-environment"
   - NetworkManager-fortisslvpn-gnome
   - NetworkManager-openvpn-gnome
   - cheese
   - clevis-dracut
+  - flac
   - joe
   - kate
   - kde-connect
