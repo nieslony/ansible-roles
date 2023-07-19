@@ -90,6 +90,7 @@
   package:
     name: "{{ commercial_packages }}"
     state: present
+    disable_gpg_check: true
 
 - name: Disable external repositories
   include_role:
