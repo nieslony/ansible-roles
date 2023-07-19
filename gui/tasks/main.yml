@@ -65,7 +65,8 @@
   dnf:
     name: "{{ gui_rpm_packages_centos }}"
     state: latest
-    nobest: yes
+    nobest: true
+    skip_broken: true
     exclude: "{{ exclude_packages }}"
   when: ansible_distribution == "CentOS"
 
