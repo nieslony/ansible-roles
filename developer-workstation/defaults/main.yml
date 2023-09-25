@@ -25,6 +25,7 @@ rpm_devel_packages:
   - java-latest-openjdk-devel
   - libguestfs
   - libvirt
+  - libvirt-devel
   - maven
   - podman
   - podman-remote
