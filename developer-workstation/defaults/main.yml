@@ -17,6 +17,7 @@ rpm_devel_packages:
   - ansible
   - ansible-freeipa
   - ant
+  - apache-netbeans
   - bridge-utils
   - cockpit-machines
   - cockpit-podman
