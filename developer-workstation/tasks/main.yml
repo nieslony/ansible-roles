@@ -50,16 +50,6 @@
     state: latest
   when: ansible_distribution == "Fedora"
 
-- name: "Install libvirt gem"
-  gem:
-    name: "nokogiri"
-    version: "1.6.8"
-
-  gem:
-    name: libvirt
-    include_dependencies: no
-  when: ansible_distribution == "CentOS"
-
 - name: Create services
   ipa_service:
     name: "{{ item }}/{{ ansible_fqdn }}"
@@ -121,10 +111,9 @@
     enabled: yes
     state: started
 
-- name: Enable firewalld in firewall
+- name: Enable squid in firewall
   firewalld:
     service: squid
     permanent: yes
     state: enabled
     zone: libvirt
-
