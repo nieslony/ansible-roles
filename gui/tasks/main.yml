@@ -149,7 +149,7 @@
     src: bookmarks
     dest: /etc/skel/.config/gtk-3.0/bookmarks
 
-- name: Install user-placel.xbel
+- name: Install user-places.xbel
   copy:
     src: user-places.xbel
     dest: /etc/skel/.local/share
