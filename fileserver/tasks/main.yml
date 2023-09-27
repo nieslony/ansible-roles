@@ -36,8 +36,9 @@
 
 - name: "Find nfs/{{ ansible_fqdn }} in /etc/krb5.keytab"
   shell:
-    cmd: "echo -e 'rkt /etc/krb5.keytab\nlist' | ktutil | grep -q nfs/ ; exit 0"
+    cmd: "echo -e 'rkt /etc/krb5.keytab\nlist' | ktutil | grep -q nfs/"
   register: find_service_nfs
+  failed_when: no
   changed_when: no
 
 - name: "Get NFS keytab"
@@ -54,6 +55,14 @@
     dest: /etc/samba/smb.conf
   notify: restart_samba
 
+- name: "Set domain SID"
+  shell: |
+    kinit -k
+    net setdomainsid $(
+      ipa trustconfig-show --raw | awk '/ipantsecurityidentifier/ { print $2; }'
+    )
+    kdestroy
+
 - name: "Install /etc/exports"
   template:
     src: exports
@@ -64,9 +73,11 @@
   service:
     name: "{{ item }}"
     state: started
+    enabled: yes
   loop:
-    - smb
     - nfs-server
+    - smb
+    - winbind
 
 - name: Open services in firewall
   firewalld:
