@@ -2,7 +2,7 @@
 Revision=1
 
 [Data Source]
-DisplayName={{ organization }} (${email})
+DisplayName={{ organization }}/Personal (${email})
 Enabled=true
 Parent=carddav-stub
 

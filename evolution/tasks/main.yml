@@ -31,13 +31,14 @@
   loop:
     - autoconf-caldav-nextcloud.source
     - autoconf-carddav-nextcloud.source
-    - autoconf-tasks-nextcloud.source
+    - autoconf-carddav-system-nextcloud.source
     - autoconf-identity.source
-#    - autoconf-ldap-contacts.source
-    - autoconf.source
+    - autoconf-tasks-nextcloud.source
     - autoconf-transport.source
+    - autoconf.source
     - local.source
     - system-calendar.source
+#    - autoconf-ldap-contacts.source
 
 - name: Install evolution-autoconf.sh
   copy:
