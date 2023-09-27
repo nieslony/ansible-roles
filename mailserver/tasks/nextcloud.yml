@@ -2,11 +2,14 @@
 # The current PHP memory limit is below the recommended value of 512MB.
 # https://nextcloud-mail.readthedocs.io/en/v0.18.0/admin/
 
-- name: "Add PHP remi repo"
+- name: "nextcloud : Add PHP remi repo"
   dnf:
     name: "{{ php_remi_repo }}"
     disable_gpg_check: yes
   when: php_remi_repo != ""
+
+- name: "nextcloud : Install php remi {{ php_remi_release }}"
+  command: "dnf -y module enable php:remi-{{ php_remi_release }}"
 
 - name: "nextcloud : Install packages {{ packages_nextcloud | join(', ') }}"
   dnf:
@@ -18,6 +21,22 @@
     path:  /var/www/html/cloud.{{ mydomain }}/nextcloud
   register: stat_nextcloud
   changed_when: no
+
+- name: "nextcloud : Create email user"
+  ipa_user:
+    name: "{{ item.name }}"
+    displayname: "{{ item.displayname }}"
+    password: "{{ item.password }}"
+    mail: "{{ item.mail }}"
+    givenname: "{{ item.givenname }}"
+    sn: "{{ item.sn }}"
+    krbpasswordexpiration: "2050-12-31"
+    state: present
+    update_password: on_create
+    ipa_pass: "{{ ipaadmin_password }}"
+  loop:
+    - "{{ nextcloud_ipa_users.mail }}"
+    - "{{ nextcloud_ipa_users.ldap }}"
 
 - name: "nextcloud : Download and install software"
   block:
@@ -60,6 +79,13 @@
     value: "{{ item.value | string }}"
   loop: "{{ settings | dict2items }}"
 
+- name: "nextcloud : configure php.d/10-opcache.ini"
+  ini_file:
+    path: /etc/php.d/10-opcache.ini
+    section:
+    option: opcache.interned_strings_buffer
+    value: "32"
+
 - name: "nextcloud: configure php apcu.ini"
   ini_file:
     path: /etc/php.d/40-apcu.ini
@@ -74,6 +100,7 @@
   loop:
     - mysqld
     - php-fpm
+    - redis
 
 - name: "nextcloud : Set some selinux boleans => On"
   seboolean:
@@ -125,11 +152,15 @@
 - name: "nextcloud : config system"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} config:system:set {{ item }}"
-  with_items:
-    - "trusted_domains 1 --value=cloud.{{ mydomain }}"
-    - "overwrite.cli.url --value=https://cloud.{{ mydomain }}/nextcloud"
-    - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
+  command: "{{ nextcloud_occ }} config:system:set {{ item.key }} --value='{{ item.value }}'"
+  with_items: "{{ nextcloud_system_config }}"
+
+- name: "nextcloud : setup crontab"
+  cron:
+    name: nextcloud
+    user: apache
+    job: "php -f /var/www/html/cloud.{{ mydomain }}/nextcloud/cron.php"
+    minute: "*/5"
 
 - name: "nextcloud : Update .htaccess"
   copy:
@@ -148,6 +179,20 @@
   become_user: apache
   command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_admin_displayname }}'"
   when: admin_displayname.stdout != nextcloud_admin_displayname
+
+- name: "nextcloud : Get admin's email address"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} user:setting nc-admin settings email"
+  register: admin_email
+  changed_when: no
+  ignore_errors: yes
+
+- name: "nextcloud : Set admin's email address"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_ipa_users.mail.mail }}'"
+  when: admin_email.stdout != nextcloud_ipa_users.mail.mail
 
 - name: "nextcloud : Find installed apps"
   find:
@@ -179,6 +224,13 @@
   command: "{{ nextcloud_occ }} app:enable {{ item }}"
   with_items: "{{ nextcloud_enable_apps }}"
 
+- name: "nextcloud : Configure app core"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} config:app:set --value={{ item.value }} core {{ item.key }}"
+  with_items:
+    - { key: backgroundjobs_mode, value: cron }
+
 - name: "nextcloud : Configure app user_saml"
   become: yes
   become_user: apache
@@ -190,7 +242,7 @@
   command: "{{ nextcloud_occ }} config:app:set user_saml {{ item.key}} --value {{ item.value }}"
   with_items: "{{ nextcloud_user_saml_config | dict2items }}"
 
-- name: "nextcloud : Creeate ldap config"
+- name: "nextcloud : Create ldap config"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:create-empty-config"
@@ -205,3 +257,8 @@
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:test-config s01"
+
+
+
+#   sudo -u apache ./occ config:system:set default_phone_region --value=AT
+

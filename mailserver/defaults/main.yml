@@ -115,8 +115,9 @@ roundcube_password: "Heexeb0AHeiz7eca"
 
 php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
 
+php_remi_release: "8.1"
+
 packages_nextcloud:
-    - "@php:remi-8.1"
     - bash-completion
     - bzip2
     - curl
@@ -127,6 +128,7 @@ packages_nextcloud:
     - mod_session
     - mod_ssl
     - mysql-server
+    - php-bcmath
     - php-bz2
     - php-cli
     - php-common
@@ -142,15 +144,19 @@ packages_nextcloud:
     - php-mysqlnd
     - php-opcache
     - php-pecl-apcu
+    - php-pecl-redis
     - php-process
     - php-sodium
     - php-xml
     - php-zip
     - policycoreutils-python-utils
     - python3-mysqlclient
+    - redis
     - unzip
     - wget
     - yum-utils
+
+    - python3-jmespath
 
 nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
 nextcloud_admin_user: nc-admin
@@ -175,6 +181,44 @@ nextcloud_enable_apps:
 nextcloud_user_saml_config:
     general-require_provisioned_account: 1
     type: environment-variable
+nextcloud_ipa_users:
+    mail:
+      name: mail-nextcloud
+      displayname: Nextcloud
+      password: ohnaChahr5eeshie
+      mail: "nextcloud@{{ mydomain }}"
+      givenname: Nextcloud
+      displayname: Nextcloud
+      sn: Mail
+    ldap:
+      name: ldap-nextcloud
+      displayname: Nextcloud
+      password: ohnaChahr5eeshie
+      mail:
+      givenname: Nextcloud
+      displayname: Nextcloud
+      sn: LDAP
+nextcloud_system_config:
+    - { key: "trusted_domains 1", value: "cloud.{{ mydomain }}" }
+    - { key: "overwrite.cli.url", value: "https://cloud.{{ mydomain }}/nextcloud" }
+    # - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
+    - { key: "memcache.local", value: '\OC\Memcache\APCu' }
+    - { key: "default_phone_region", value: "AT" }
+    - { key: "mail_from_address", value: "{{ nextcloud_ipa_users.mail.mail | split('@') | first }}" }
+    - { key: "mail_smtpmode", value: "smtp" }
+    - { key: "mail_sendmailmode", value: "smtp" }
+    - { key: "mail_domain", value: "{{ mydomain }}" }
+    - { key: "mail_smtphost", value: "{{ ansible_fqdn }}" }
+    - { key: "mail_smtpport", value: "587" }
+    - { key: "mail_smtpauth", value: "1" }
+    - { key: "mail_smtpname", value: "{{ nextcloud_ipa_users.mail.name }}" }
+    - { key: "mail_smtppassword", value: "{{ nextcloud_ipa_users.mail.password }}" }
+    - { key: "filelocking.enabled", value: "true" }
+    - { key: "memcache.locking", value: '\OC\Memcache\Redis' }
+    - { key: "redis host", value: localhost }
+    - { key: "redis port", value: 6379 }
+    - { key: "redis timeout", value: 0 }
+    - { key: "redis password", value: }
 nextcloud_ldap_config:
     hasMemberOfFilterSupport: 1
     ldapAgentName: "uid=rossi,cn=users,cn=accounts,dc=linux,dc=lab"
@@ -239,7 +283,6 @@ nextcloud_ldap_config:
     ldapUserFilterMode: "0"
     ldapUserFilterObjectclass: person
     ldapUserfilterGroups: ""
-
 spf_dkim_packages:
     - opendkim
     - opendkim-tools
