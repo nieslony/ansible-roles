@@ -12,6 +12,7 @@
   shell: >-
     for ip in $(
         host ipa-ca.{{ ansible_domain }} |
+        grep "has address" |
         tail -1 |
         awk '{ print $NF; }'
     ); do
