@@ -61,7 +61,7 @@
   include_role:
     name: 01-no-external-repositories
 
-- name: "Install CentOS packages: {{ gui_rpm_packages_centos | join(', ') }}"
+- name: "Install CentOS packages: {{ gui_rpm_packages_centos | sort | join(', ') }}"
   dnf:
     name: "{{ gui_rpm_packages_centos }}"
     state: present
@@ -70,7 +70,7 @@
     exclude: "{{ exclude_packages }}"
   when: ansible_distribution == "CentOS"
 
-- name: "Install Fedora packages: {{ gui_rpm_packages_fedora | join(', ') }}"
+- name: "Install Fedora packages: {{ gui_rpm_packages_fedora | sort | join(', ') }}"
   dnf:
     name: "{{ gui_rpm_packages_fedora }}"
     state: latest
@@ -81,12 +81,12 @@
   include_role:
     name: 01-no-external-repositories
 
-- name: "Remove packages: {{ remove_packages | join(', ') }}"
+- name: "Remove packages: {{ remove_packages | sort | join(', ') }}"
   dnf:
     name: "{{ remove_packages }}"
     state: absent
 
-- name: "Install commercial packages {{ commercial_packages | join(', ') }}"
+- name: "Install commercial packages {{ commercial_packages | sort | join(', ') }}"
   package:
     name: "{{ commercial_packages }}"
     state: present
