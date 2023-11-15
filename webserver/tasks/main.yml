@@ -41,29 +41,73 @@
     shell: /sbin/nologin
     system: yes
 
-- name: "Create CNAMES and host objects remote"
+- name: "Create CNAMES and host objects remote with admin password"
   block:
     - name: "Create CNAMES for vhosts {{ vhosts }}"
-      ipadnsrecord:
-        ipaadmin_password: "{{ ipaadmin_password }}"
+      ipa_dnsrecord:
+        ipa_pass: "{{ ipaadmin_password }}"
         zone_name: "{{ item.split('.')[1:] | join('.') }}"
         record_type: CNAME
-        cname_hostname: "{{ ansible_fqdn }}."
-        name: "{{ item | split('.') | first }}"
+        record_value: "{{ ansible_fqdn }}."
+        record_name: "{{ item | split('.') | first }}"
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
 
     - name: "Create host objects {{ vhosts }}"
-      ipahost:
-        ipaadmin_password: "{{ ipaadmin_password }}"
-        name: "{{ item }}"
-        managedby_host: "{{ ansible_fqdn }}"
+      ipa_host:
+        ipa_pass: "{{ ipaadmin_password }}"
+        fqdn: "{{ item }}"
         state: present
-        random: yes
-        update_password: on_create
+        random_password: yes
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+
+    - name: "Add managedby {{ ansible_fqdn }}"
+      shell: |
+        echo "{{ ipaadmin_password }}" | kinit admin
+        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
+        kdestroy
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
   when: ipaadmin_password is defined
+
+- name: "Find /etc/foreman-proxy/freeipa.keytab"
+  stat:
+    path: /etc/foreman-proxy/freeipa.keytab
+  register: stat_freeipa_keytab
+
+- name: "Create CNAMES and host objects remote with keytab"
+  block:
+    - name: "Create CNAMES for vhosts {{ vhosts }}"
+      ipa_dnsrecord:
+        zone_name: "{{ item.split('.')[1:] | join('.') }}"
+        record_type: CNAME
+        record_value: "{{ ansible_fqdn }}."
+        record_name: "{{ item | split('.') | first }}"
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+
+    - name: "Create host objects {{ vhosts }}"
+      ipa_host:
+        fqdn: "{{ item }}"
+        managedby_host: "{{ ansible_fqdn }}"
+        state: present
+        random_password: yes
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+
+    - name: "Add managedby {{ ansible_fqdn }}"
+      shell: |
+        echo "{{ ipaadmin_password }}" | kinit admin
+        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
+        kdestroy
+      when: item != ansible_fqdn
+      loop: "{{ vhosts }}"
+  when: stat_freeipa_keytab.stat.exists
+  environment:
+    KRB5_CLIENT_KTNAME: /etc/foreman-proxy/freeipa.keytab
+    http_proxy: ""
+    https_proxy: ""
 
 - name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
   ipa_service:
