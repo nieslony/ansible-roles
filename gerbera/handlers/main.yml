@@ -1,2 +1,7 @@
 ---
 # handlers file for gerbera
+- name: "Restart gerbera"
+  service:
+    name: gerbera
+    state: restarted
+  listen: restart_gerbera

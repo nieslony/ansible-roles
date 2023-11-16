@@ -1,2 +1,192 @@
----
-# tasks file for gerbera
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
+- debug: var=ansible_all_ipv4_addresses
+- debug: var=ansible_default_ipv4.address
+
+- name: "Create volumes"
+  lvol:
+    vg: "{{ system_volume_group }}"
+    lv: "{{ item.key }}"
+    size: "{{ item.value.size }}"
+  loop:
+    "{{ data_volumes | dict2items }}"
+
+- name: "Create filesystems"
+  filesystem:
+    fstype: xfs
+    dev: "/dev/{{ system_volume_group }}/{{ item.key }}"
+  loop:
+    "{{ data_volumes | dict2items }}"
+
+- name: "Mount filesystems"
+  mount:
+    path: "/data/{{ item.key }}"
+    src: "/dev/{{ system_volume_group }}/{{ item.key }}"
+    fstype: xfs
+    state: mounted
+  loop:
+    "{{ data_volumes | dict2items }}"
+
+- name: "Set media permissions"
+  file:
+    path: "/data/{{ item.key }}"
+    group: "{{ item.value.group }}"
+    mode: 02775
+  loop:
+    "{{ data_volumes | dict2items }}"
+
+- name: "Install packages: {{ packages | join(', ') }}"
+  dnf:
+     name: "{{ packages }}"
+     state: latest
+
+- name: "Get checksum of /etc/gerbera/config.xml"
+  stat:
+    path: /etc/gerbera/config.xml
+  register: stat_config_xml_before
+
+- name: "Configure gerbera: remove settings"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "{{ item }}"
+    pretty_print: yes
+    state: absent
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+  loop:
+    - "/gc:config/gc:server/gc:port"
+    - "/gc:config/gc:server/gc:containers"
+    - "/gc:config/gc:server/gc:virtualURL"
+    - "/gc:config/gc:server/gc:pc-directory"
+    - "/gc:config/gc:server/gc:ip"
+    - "/gc:config/gc:import/gc:visible-directories"
+    - "/gc:config/gc:import/gc:autoscan"
+
+- name: "Configure gerbera: set port, ip, virtualURL"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:server"
+    pretty_print: yes
+    add_children:
+        - port: "{{ gerbera_port }}"
+        - ip: "{{ ansible_default_ipv4.address }}"
+        - virtualURL: "{{ virtualUrl }}"
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+# port ip virtualurl
+
+- name: "Configure gerbera: disable containers"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:server/containers"
+    attribute: enabled
+    value: "no"
+    pretty_print: yes
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Configure gerbera: pc-directory"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:server/pc-directory"
+    attribute: upnp-hide
+    value: "yes"
+    pretty_print: yes
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Configure gerbera: visible directories"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:import/gc:visible-directories"
+    pretty_print: yes
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Configure gerbera: visible directories"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:import/gc:visible-directories"
+    pretty_print: yes
+    add_children:
+      - add-path:
+          name: /data
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Configure gerbera: autoscan"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:import/gc:autoscan"
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Configure gerbera: autoscan directories"
+  xml:
+    path: /etc/gerbera/config.xml
+    xpath: "/gc:config/gc:import/gc:autoscan"
+    add_children:
+      - directory:
+          location: /data/music
+          mode: inotify
+          interval: "3600"
+          recursive: "yes"
+      - directory:
+          location: /data/videos
+          mode: inotify
+          interval: "3600"
+          recursive: "yes"
+    pretty_print: yes
+    namespaces:
+        gc: http://mediatomb.cc/config/2
+  changed_when: no
+
+- name: "Check for changes in /etc/gerbera/config.xml"
+  stat:
+    path: /etc/gerbera/config.xml
+  register: stat_config_xml_after
+  changed_when: stat_config_xml_after.stat.checksum != stat_config_xml_before.stat.checksum
+  notify: restart_gerbera
+
+- name: "Create Apache config folder"
+  file:
+    path: "/etc/httpd/conf.d/{{ ansible_fqdn }}.conf.inc.d"
+    state: directory
+
+- name: "Copy apache config"
+  template:
+    src: gerbera.conf
+    dest: "/etc/httpd/conf.d/{{ ansible_fqdn }}.conf.inc.d"
+  notify: restart_httpd
+
+- name: configure firewall
+  firewalld:
+    port: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - "{{ gerbera_port }}/udp"
+    - "1900/udp"
+
+- name: Allow http network connections
+  seboolean:
+    name: httpd_can_network_connect
+    state: true
+    persistent: true
+  notify: restart_httpd
+
+- name: "Start gerbera"
+  service:
+    name: gerbera
+    enabled: yes
+    state: started

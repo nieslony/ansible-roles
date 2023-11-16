@@ -1,2 +1,24 @@
 ---
 # defaults file for gerbera
+
+packages:
+    - gerbera
+    - httpd
+    - python3-lxml
+
+gerbera_port: "49200"
+virtualUrl: "https://{{ ansible_fqdn }}"
+
+data_volumes:
+    music: { size: "20G", group: media-editors }
+    videos: { size: "5G", group: media-editors }
+
+config_xml:
+    - xpath: /config/server/port
+      child: "{{ port }}"
+    - xpath: /config/server/containers
+      attributes:
+        enabled: "no"
+    - { xpath: /config/server/virtualURL, child: "{{ virtualUrl }}" }
+    - { xpath: /config/import, attribute: use-inotify, value: auto }
+
