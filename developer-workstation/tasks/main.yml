@@ -36,7 +36,10 @@
         dev: "/dev/system/{{ item.name }}"
         resizefs: yes
       loop: "{{ logical_volumes_devel }}"
-  when:  ansible_lvm.vgs.system.size_g|int > 200
+  when:
+    - ansible_lvm is defined
+    - ansible_lvm.vgs is defined
+    - ansible_lvm.vgs.system.size_g|int > 200
 
 - name: "Install CentOS devel packages: {{ rpm_devel_packages_centos | join(', ') }}"
   dnf:
