@@ -79,3 +79,11 @@ exclude_packages:
 
 remove_packages:
   - gnome-initial-setup
+
+file_bookmarks:
+  - name: "Music on Fileserver"
+    url: "file:///data/music"
+    icon: "folder-remote"
+  - name: "Videos on Fileserver"
+    url: "file:///data/videos"
+    icon: "folder-remote"

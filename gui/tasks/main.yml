@@ -46,7 +46,9 @@
 - name: Enable repos
   command: "subscription-manager repos --enable {{ item }}"
   with_items: "{{ enabled_centos8_repos }}"
-  when: foreman['content_view'] == "Centos8_Stream_Extended"
+  when:
+    - enabled_centos8_repos is defined
+    - foreman['content_view'] == "Centos8_Stream_Extended"
 
 - name: Disable external repositories
   include_role:
@@ -144,24 +146,14 @@
     - ".local/share"
     - ".bashrc.d"
 
-- name: Install nautilus bookmarks
-  copy:
-    src: bookmarks
-    dest: /etc/skel/.config/gtk-3.0/bookmarks
-
-- name: Install user-places.xbel
-  copy:
-    src: user-places.xbel
-    dest: /etc/skel/.local/share
-
 - name: Install bashrc.d scripts
-  copy:
-    src: "patch_user-places_xbel.sh"
+  template:
+    src: "patch_file_bookmarks.sh"
     dest: /etc/skel/.bashrc.d
 
-- name: Install patch_user-places_xbel.desktop
+- name: Install patch_file_bookmarks.desktop
   copy:
-    src: patch_user-places_xbel.desktop
+    src: patch_file_bookmarks.desktop
     dest: /etc/xdg/autostart
 
 # PASSWORD=pwd systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 $( lsblk --fs -lp | awk '/crypto_LUKS/ { print $1; }' )
