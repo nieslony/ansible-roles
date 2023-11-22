@@ -170,15 +170,23 @@
     dest: "/etc/httpd/conf.d/{{ ansible_fqdn }}.conf.inc.d"
   notify: restart_httpd
 
-- name: configure firewall
+- name: Open ports in firewall
   firewalld:
     port: "{{ item }}"
     permanent: true
     state: enabled
     immediate: true
   loop:
-    - "{{ gerbera_port }}/udp"
-    - "1900/udp"
+    - "{{ gerbera_port }}/tcp"
+
+- name: Open services in firewall
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - ssdp
 
 - name: Allow http network connections
   seboolean:
