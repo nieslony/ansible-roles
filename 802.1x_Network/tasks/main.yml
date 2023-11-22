@@ -36,7 +36,7 @@
     creates: "{{ cert_path }}"
 
 - name: Find connection
-  command: "nmcli con show {{ connection_name }}"
+  command: "nmcli con show '{{ connection_name }}'"
   register: find_connection
   ignore_errors: yes
   changed_when: false
@@ -44,9 +44,9 @@
 - name: Create connection
   command: |
     nmcli connection add
-        con-name {{ connection_name }}
+        con-name "{{ connection_name }}"
         type wifi
-        ssid {{ connection_ssid }}
+        ssid "{{ connection_ssid }}"
   when: find_connection.rc ==  10
 
 - name: Get NM connection options
@@ -67,7 +67,7 @@
 - name: Gather nmcli modifications
   set_fact:
     nmcli_mod_options: "{{ nmcli_mod_options + [ item.key, item.value ] }}"
-  when: nmcli_opts | json_query('\"' + item.key + '\"') != item.value
+  when: nmcli_opts[item.key] is not defined or nmcli_opts[item.key] != item.value
   with_items:
     - { key: "802-11-wireless-security.key-mgmt", value: "wpa-eap" }
     - { key: "802-1x.eap", value: "tls" }
@@ -79,7 +79,7 @@
 
 - name: Change network connection
   command: |
-    nmcli connection modify {{ connection_name }}
+    nmcli connection modify "{{ connection_name }}"
         {{ nmcli_mod_options | join(' ') }}
   when: nmcli_mod_options | length > 0
 

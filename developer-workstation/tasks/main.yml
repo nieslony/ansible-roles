@@ -39,6 +39,7 @@
   when:
     - ansible_lvm is defined
     - ansible_lvm.vgs is defined
+    - ansible_lvm.vgs.system is defined
     - ansible_lvm.vgs.system.size_g|int > 200
 
 - name: "Install CentOS devel packages: {{ rpm_devel_packages_centos | join(', ') }}"

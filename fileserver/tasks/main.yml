@@ -58,10 +58,13 @@
 - name: "Set domain SID"
   shell: |
     kinit -k
-    net setdomainsid $(
-      ipa trustconfig-show --raw | awk '/ipantsecurityidentifier/ { print $2; }'
-    )
+    SID=$( ipa trustconfig-show --raw | awk '/ipantsecurityidentifier/ { print $2; }' )
+    if ! net getdomainsid | grep $SID ; then
+      net setdomainsid $SID
+    fi
     kdestroy
+  register: set_sid
+  changed_when: set_sid.stdout == ""
 
 - name: "Install /etc/exports"
   template:

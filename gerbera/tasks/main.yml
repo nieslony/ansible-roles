@@ -4,29 +4,31 @@
 - debug: var=ansible_all_ipv4_addresses
 - debug: var=ansible_default_ipv4.address
 
-- name: "Create volumes"
-  lvol:
-    vg: "{{ system_volume_group }}"
-    lv: "{{ item.key }}"
-    size: "{{ item.value.size }}"
-  loop:
-    "{{ data_volumes | dict2items }}"
+- block:
+  - name: "Create volumes"
+    lvol:
+        vg: "{{ system_volume_group }}"
+        lv: "{{ item.key }}"
+        size: "{{ item.value.size }}"
+    loop:
+        "{{ data_volumes | dict2items }}"
 
-- name: "Create filesystems"
-  filesystem:
-    fstype: xfs
-    dev: "/dev/{{ system_volume_group }}/{{ item.key }}"
-  loop:
-    "{{ data_volumes | dict2items }}"
+  - name: "Create filesystems"
+    filesystem:
+        fstype: xfs
+        dev: "/dev/{{ system_volume_group }}/{{ item.key }}"
+    loop:
+        "{{ data_volumes | dict2items }}"
 
-- name: "Mount filesystems"
-  mount:
-    path: "/data/{{ item.key }}"
-    src: "/dev/{{ system_volume_group }}/{{ item.key }}"
-    fstype: xfs
-    state: mounted
-  loop:
-    "{{ data_volumes | dict2items }}"
+  - name: "Mount filesystems"
+    mount:
+        path: "/data/{{ item.key }}"
+        src: "/dev/{{ system_volume_group }}/{{ item.key }}"
+        fstype: xfs
+        state: mounted
+    loop:
+        "{{ data_volumes | dict2items }}"
+  when: system_volume_group is defined
 
 - name: "Set media permissions"
   file:
@@ -168,15 +170,23 @@
     dest: "/etc/httpd/conf.d/{{ ansible_fqdn }}.conf.inc.d"
   notify: restart_httpd
 
-- name: configure firewall
+- name: Open ports in firewall
   firewalld:
     port: "{{ item }}"
     permanent: true
     state: enabled
     immediate: true
   loop:
-    - "{{ gerbera_port }}/udp"
-    - "1900/udp"
+    - "{{ gerbera_port }}/tcp"
+
+- name: Open services in firewall
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+    immediate: true
+  loop:
+    - ssdp
 
 - name: Allow http network connections
   seboolean:

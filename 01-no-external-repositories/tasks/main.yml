@@ -14,5 +14,7 @@
   command: "mv {{ item }} /etc/yum.repos.d/backup"
   loop: "{{ found_repo_files.stdout_lines }}"
   when: >
-    (repo_whitelist is undefined) or
-    (not item.split("/") | last in repo_whitelist)
+    skip_repo_backup is undefined and (
+        (repo_whitelist is undefined) or
+        (not item.split("/") | last in repo_whitelist)
+    )
