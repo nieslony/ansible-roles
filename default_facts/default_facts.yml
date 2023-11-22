@@ -44,7 +44,8 @@
             {{ ldap_base_dn }}
         {%- endif -%}
 
-- set_fact:
+- name: Find name of system volume group
+  set_fact:
     system_volume_group: "{{ (ansible_lvm.vgs | dict2items | first).key }}"
   when:
    - ansible_lvm.vgs is defined
