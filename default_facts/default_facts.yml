@@ -46,4 +46,6 @@
 
 - set_fact:
     system_volume_group: "{{ (ansible_lvm.vgs | dict2items | first).key }}"
-  when: ansible_lvm.vgs is defined
+  when:
+   - ansible_lvm.vgs is defined
+   - ansible_lvm.vgs | length > 0
