@@ -1,2 +1,7 @@
 ---
 # defaults file for no-external-repositories
+
+
+# repo_whitelist:
+#  - bla.repo
+
