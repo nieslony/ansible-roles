@@ -10,6 +10,7 @@
         vg: "{{ system_volume_group }}"
         lv: "{{ item.key }}"
         size: "{{ item.value.size }}"
+        shrink: false
     loop:
         "{{ data_volumes | dict2items }}"
 
