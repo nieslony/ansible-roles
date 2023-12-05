@@ -8,3 +8,4 @@ packages:
     - nfs-utils
     - python3-urllib-gssapi
     - samba
+    - samba-winbind-clients
