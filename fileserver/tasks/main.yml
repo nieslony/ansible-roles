@@ -72,6 +72,12 @@
     dest: /etc/exports
   notify: exportfs
 
+- name: "Set selinux booleans"
+  seboolean:
+    name: samba_export_all_rw
+    state: true
+    persistent: true
+
 - name: "Start services"
   service:
     name: "{{ item }}"
