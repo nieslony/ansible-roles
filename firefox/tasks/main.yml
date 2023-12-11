@@ -2,72 +2,136 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: Install firefox
-  dnf:
-    name: firefox
-    state: latest
+- block:
+    - name: Install firefox
+      dnf:
+        name: firefox
+        state: latest
 
-- name: Find /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
-  stat:
-    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
-  register: find_all_ipa
-  changed_when: false
+    - name: Find /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+      stat:
+        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+      register: find_all_ipa
+      changed_when: false
 
-- name: Set uris trusted for negotiate
-  lineinfile:
-    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
-    line: |
-        pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | join(', ') }}");
-    regex: |
-        ^pref\("network.negotiate-auth.trusted-uris".*
-  when: find_all_ipa.stat.exists
+    - name: Set uris trusted for negotiate
+      lineinfile:
+        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+        line: |
+            pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | join(', ') }}");
+        regex: |
+            ^pref\("network.negotiate-auth.trusted-uris".*
+      when: find_all_ipa.stat.exists
 
-- name: Set uris trusted for delegation
-  lineinfile:
-    path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
-    line: |
-        pref("network.negotiate-auth.delegation-uris", "{{ delegation_uris | join(', ') }}");
-    regex: |
-        ^pref\("network.negotiate-auth.delegation-uris".*
-  when: find_all_ipa.stat.exists
+    - name: Set uris trusted for delegation
+      lineinfile:
+        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+        line: |
+            pref("network.negotiate-auth.delegation-uris", "{{ delegation_uris | join(', ') }}");
+        regex: |
+            ^pref\("network.negotiate-auth.delegation-uris".*
+      when: find_all_ipa.stat.exists
 
-- name: Create policies.json
-  copy:
-    dest: /usr/lib64/firefox/distribution/policies.json
-    force: false
-    content: |
-        {}
+    - name: Create policies.json
+      copy:
+        dest: /usr/lib64/firefox/distribution/policies.json
+        force: false
+        content: |
+            {}
 
-- name: Read policies.json
-  slurp:
-    src: /usr/lib64/firefox/distribution/policies.json
-  register: policies_json
+    - name: Read policies.json
+      slurp:
+        src: /usr/lib64/firefox/distribution/policies.json
+      register: policies_json
 
-- name: Add toplevel name to managed bookmarks
-  set_fact:
-    managed_bookmarks: |
-        {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
+    - name: Add toplevel name to managed bookmarks
+      set_fact:
+        managed_bookmarks: |
+            {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
 
-- name: Parse and combine policies.json
-  set_fact:
-    firefox_policies: |
-        {{ policies_json.content | b64decode | from_json | combine({
-            "policies": {
-                "ShowHomeButton": true,
-                "DisplayBookmarksToolbar": true,
-                "NoDefaultBookmarks": true,
-                "EnableTrackingProtection": {
-                    "Value": true,
-                    "Locked": true,
-                    "Cryptomining": true,
-                    "Fingerprinting": true
-                },
-                "ManagedBookmarks": managed_bookmarks
-            }
-            }, recursive=True)
-        }}
+    - name: Parse and combine policies.json
+      set_fact:
+        firefox_policies: |
+            {{ policies_json.content | b64decode | from_json | combine({
+                "policies": {
+                    "ShowHomeButton": true,
+                    "DisplayBookmarksToolbar": true,
+                    "NoDefaultBookmarks": true,
+                    "EnableTrackingProtection": {
+                        "Value": true,
+                        "Locked": true,
+                        "Cryptomining": true,
+                        "Fingerprinting": true
+                    },
+                    "ManagedBookmarks": managed_bookmarks
+                }
+                }, recursive=True)
+            }}
 
-- name: Write policies.json
-  copy:
-    dest: /usr/lib64/firefox/distribution/policies.json
-    content: "{{ firefox_policies | to_nice_json }}"
+    - name: Write policies.json
+      copy:
+        dest: /usr/lib64/firefox/distribution/policies.json
+        content: "{{ firefox_policies | to_nice_json }}"
+  when: enable_firefox
+
+- block:
+  - name: Find google-chrome.repo
+    stat:
+      path: /etc/yum.repos.d/backup/google-chrome.repo
+    register: stat_chrome_repo
+    changed_when: false
+
+  - name: Install Googlr Chrome Repo
+    dnf:
+      name: https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+      state: present
+      disable_gpg_check: true
+    when: install_chrome_repo and not stat_chrome_repo.stat.exists
+
+  - name: Install Google Chrome
+    dnf:
+      name: google-chrome-stable
+      state: latest
+
+  - name: Create Policy folders
+    file:
+      path: "/etc/opt/chrome/policies/{{ item }}"
+      state: directory
+    loop:
+      - managed
+      - recommended
+
+  - name: Create empty policy file
+    copy:
+      dest: "/etc/opt/chrome/policies/managed/managed_policies.json"
+      content: "{ }"
+      force: false
+
+  - name: Read policies.json
+    slurp:
+      src: /etc/opt/chrome/policies/managed/managed_policies.json
+    register: managed_policies_json
+
+  - name: Add toplevel name to managed bookmarks
+    set_fact:
+      managed_bookmarks: |
+            {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
+
+  - name: Parse and combine managed_policies.json
+    set_fact:
+      chrome_policies: |
+            {{ managed_policies_json.content | b64decode | from_json | combine({
+                    "ShowHomeButton": true,
+                    "BookmarkBarEnabled": true,
+                    "KerberosEnabled": true,
+                    "EnableAuthNegotiatePort": true,
+                    "AuthServerAllowlist": trusted_uris | join(', '),
+                    "ManagedBookmarks": managed_bookmarks
+                }, recursive=True)
+            }}
+
+  - name: Write policies.json
+    copy:
+      dest: /etc/opt/chrome/policies/managed/managed_policies.json
+      content: "{{ chrome_policies | to_nice_json }}"
+  when: enable_google_chrome

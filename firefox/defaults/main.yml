@@ -1,4 +1,10 @@
 # defaults file for firefox
+
+enable_firefox: true
+enable_google_chrome: true
+
+install_chrome_repo: "{{ not foreman is defined }}"
+
 trusted_uris: ["{{ ansible_domain }}"]
 delegation_uris: []
 
