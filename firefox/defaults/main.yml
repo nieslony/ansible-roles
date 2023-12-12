@@ -8,6 +8,8 @@ install_chrome_repo: "{{ not foreman is defined }}"
 trusted_uris: ["{{ ansible_domain }}"]
 delegation_uris: []
 
+homepage: "https://www.google.com"
+
 managed_bookmarks: []
     # - name: "Nextcloud"
     #   url: "http://cloud.test.lab"

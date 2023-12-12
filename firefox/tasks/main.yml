@@ -2,6 +2,11 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
+- name: Add toplevel name to managed bookmarks
+  set_fact:
+    managed_bookmarks: |
+        {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
+
 - block:
     - name: Install firefox
       dnf:
@@ -44,17 +49,16 @@
         src: /usr/lib64/firefox/distribution/policies.json
       register: policies_json
 
-    - name: Add toplevel name to managed bookmarks
-      set_fact:
-        managed_bookmarks: |
-            {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
-
     - name: Parse and combine policies.json
       set_fact:
         firefox_policies: |
             {{ policies_json.content | b64decode | from_json | combine({
                 "policies": {
                     "ShowHomeButton": true,
+                    "Homepage": {
+                        "URL": "{{ homepage }}",
+                        "StartPage": "homepage"
+                    },
                     "DisplayBookmarksToolbar": true,
                     "NoDefaultBookmarks": true,
                     "EnableTrackingProtection": {
@@ -112,16 +116,12 @@
       src: /etc/opt/chrome/policies/managed/managed_policies.json
     register: managed_policies_json
 
-  - name: Add toplevel name to managed bookmarks
-    set_fact:
-      managed_bookmarks: |
-            {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
-
   - name: Parse and combine managed_policies.json
     set_fact:
       chrome_policies: |
             {{ managed_policies_json.content | b64decode | from_json | combine({
                     "ShowHomeButton": true,
+                    "HomepageLocation": homepage,
                     "BookmarkBarEnabled": true,
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
