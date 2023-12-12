@@ -56,7 +56,7 @@
                 "policies": {
                     "ShowHomeButton": true,
                     "Homepage": {
-                        "URL": "{{ homepage }}",
+                        "URL": homepage,
                         "StartPage": "homepage"
                     },
                     "DisplayBookmarksToolbar": true,
