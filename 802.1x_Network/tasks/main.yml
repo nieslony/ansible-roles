@@ -51,7 +51,7 @@
 
 - name: Get NM connection options
   shell: |
-    nmcli --show-secrets con show {{ connection_name }} \
+    nmcli --show-secrets con show "{{ connection_name }}" \
         | awk -F ": +" '
             BEGIN { print "{"; }
             END { print "\"x\": \"\"}"; }
