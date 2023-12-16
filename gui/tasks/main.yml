@@ -156,6 +156,35 @@
     src: patch_file_bookmarks.desktop
     dest: /etc/xdg/autostart
 
+- name: Find /boot/luks.pwd
+  stat:
+    path: /boot/luks.pwd
+  register: stat_luks_pwd
+
+- block:
+  - name: Create new luks key from TPM2
+    shell: "PASSWORD=pwd systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 $( lsblk --fs -lp | awk '/crypto_LUKS/ { print $1; }' )"
+
+  - name: "Modify /etc/crypttab"
+    lineinfile:
+      path: /etc/crypttab
+      regexp: '([a-z0-9\-]+)\s+([A-Za-z0-9=\-]+)\s*.*'
+      line: '\g<1> \g<2> - tpm2-device=auto/'
+      backrefs: yes
+
+  - name: "Recreate initial ram disk"
+    command: dracut  --regenerate-all --force
+
+  - name: "Remove /boot/luks.pwd"
+    file:
+      path: /boot/luks.pwd
+      state: absent
+  when: stat_luks_pwd.stat.exists
+
+
+
+
+
 # PASSWORD=pwd systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=7 $( lsblk --fs -lp | awk '/crypto_LUKS/ { print $1; }' )
 # sed -i -E 's/([a-z0-9\-]+)\s+([A-Za-z0-9=\-]+)\s*.*/\1 \2 - tpm2-device=auto/' /etc/crypttab
 # dracut -f
