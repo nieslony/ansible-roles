@@ -151,6 +151,37 @@
     src: "patch_file_bookmarks.sh"
     dest: /etc/skel/.bashrc.d
 
+- name: "Install abcde.conf"
+  dest: /etc/skel/.abcde.conf
+  copy: |
+    content:PADTRACKS=y
+    MAXPROCS=4
+
+    # as $1 and outputs it on stdout.
+    mungefilename ()
+    {
+        echo "$@" |
+            sed 's/:/ - /g' |
+            tr '`' "'" |
+            tr / '-' |
+            sed "s/''/\"/g" |
+            sed 's/"\([^"]*\)"/»\1«/g' |
+            tr -d '?[:cntrl:]' |
+            sed 's/  */ /g' |
+            cat
+    }
+
+    EJECTCD=y
+
+    FLACOPTS="-8"
+    OGGENCOPTS=-"q 10"
+
+    pre_read  ()
+    {
+        eject -t
+        sleep 5
+    }
+
 - name: Install patch_file_bookmarks.desktop
   copy:
     src: patch_file_bookmarks.desktop

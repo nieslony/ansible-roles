@@ -41,6 +41,7 @@ gui_rpm_packages:
   - "@workstation-product-environment"
   - NetworkManager-fortisslvpn-gnome
   - NetworkManager-openvpn-gnome
+  - abcde
   - cdrskin
   - cheese
   - clevis-dracut
