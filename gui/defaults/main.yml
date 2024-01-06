@@ -41,11 +41,14 @@ gui_rpm_packages:
   - "@workstation-product-environment"
   - NetworkManager-fortisslvpn-gnome
   - NetworkManager-openvpn-gnome
+  - cdrskin
   - cheese
   - clevis-dracut
   - flac
   - joe
+  - k3b
   - kate
+  - kcalc
   - kde-connect
   - kleopatra
   - konqueror
