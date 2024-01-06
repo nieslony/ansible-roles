@@ -37,6 +37,14 @@
   loop:
     - "{{ nextcloud_ipa_users.mail }}"
     - "{{ nextcloud_ipa_users.ldap }}"
+  ignore_errors: yes
+
+- name: "nextcloud : find nextcloud users"
+  command: "getent passwd {{ item }}"
+  loop:
+    - "{{ nextcloud_ipa_users.mail.name }}"
+    - "{{ nextcloud_ipa_users.ldap.name }}"
+  changed_when: no
 
 - name: "nextcloud : Download and install software"
   block:
