@@ -1,2 +1,75 @@
----
-# tasks file for minidlna
+- block:
+  - name: "Create volumes"
+    lvol:
+        vg: "{{ system_volume_group }}"
+        lv: "{{ item.key }}"
+        size: "{{ item.value.size }}"
+        shrink: false
+    loop:
+        "{{ data_volumes | dict2items }}"
+
+  - name: "Create filesystems"
+    filesystem:
+        fstype: xfs
+        dev: "/dev/{{ system_volume_group }}/{{ item.key }}"
+    loop:
+        "{{ data_volumes | dict2items }}"
+
+  - name: "Mount filesystems"
+    mount:
+        path: "/data/{{ item.key }}"
+        src: "/dev/{{ system_volume_group }}/{{ item.key }}"
+        fstype: xfs
+        state: mounted
+    loop:
+        "{{ data_volumes | dict2items }}"
+  when: system_volume_group is defined
+
+- name: "Install minidlna"
+  dnf:
+    name: minidlna
+    state: latest
+
+
+- name: "Set media permissions"
+  file:
+    path: "/data/{{ item.key }}"
+    group: "{{ item.value.group }}"
+    mode: 02775
+  loop:
+    "{{ data_volumes | dict2items }}"
+
+- name: "Unset media dir"
+  lineinfile:
+    path: "/etc/minidlna.conf"
+    regexp: ".*media_dir=/.*"
+    line: "#media_dir="
+
+- name: "Unset media dirs"
+  lineinfile:
+    path: "/etc/minidlna.conf"
+    insertafter: ".*media_dir="
+    line: "media_dir={{ item.type }},/data/{{ item.dir }}"
+  with_items:
+   - { type: "A", dir: "music" }
+   - { type: "V", dir: "videos" }
+
+- name: "Set root container"
+  lineinfile:
+    path: "/etc/minidlna.conf"
+    regexp: "#?root_container=.*"
+    line: "root_container=B"
+    state: present
+
+- name: "Start minidlna"
+  service:
+    name: minidlna
+    state: started
+    enabled: yes
+
+- name: "Enable minidlna in firewall"
+  firewalld:
+    service: minidlna
+    permanent: true
+    state: enabled
+    immediate: true
