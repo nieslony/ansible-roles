@@ -163,9 +163,15 @@
 - name: Copy vhost configuration files
   template:
     src: vhost.conf
-    dest: /etc/httpd/conf.d/{{ item }}.conf
+    dest: "/etc/httpd/conf.d/{{ item }}.conf"
   loop: "{{ vhosts }}"
   notify: restart_httpd
+
+- name: "Create vhost include folders"
+  file:
+    path: "/etc/httpd/conf.d/{{ item }}.conf.inc.d"
+    state: directory
+  loop: "{{ vhosts }}"
 
 - name: Find ssl.conf
   stat:
