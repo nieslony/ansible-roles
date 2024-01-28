@@ -87,6 +87,7 @@
   dnf:
     name: "{{ remove_packages }}"
     state: absent
+    disable_excludes: yes
 
 - name: "Install commercial packages {{ commercial_packages | sort | join(', ') }}"
   package:
