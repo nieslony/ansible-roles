@@ -102,7 +102,7 @@ gui_extra_themes:
   - lovelock-kde-theme
   - luv-icon-theme
   - lxde-icon-theme
-  - install lxqt-themes
+  - lxqt-themes
   - lxqt-themes-fedora
   - mate-themes
   - materia-gtk-theme
@@ -123,7 +123,6 @@ gui_extra_themes:
   - pop-gtk4-theme
   - sddm-themes
   - solar-kde-theme
-  - sound-theme-freedesktop
   - sound-theme-freedesktop
   - tango-icon-theme
   - theme-switcher
