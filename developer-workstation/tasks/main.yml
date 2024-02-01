@@ -45,14 +45,15 @@
 - name: "Install CentOS devel packages: {{ rpm_devel_packages_centos | join(', ') }}"
   dnf:
     name: "{{ rpm_devel_packages_centos }}"
-    state: latest
+    state: present
     nobest: true
   when: ansible_distribution == "CentOS"
 
 - name: "Install Fedora devel packages: {{ rpm_devel_packages_fedora | join(', ') }}"
   dnf:
     name: "{{ rpm_devel_packages_fedora }}"
-    state: latest
+    state: present
+    nobest: true
   when: ansible_distribution == "Fedora"
 
 - name: Create services
