@@ -75,8 +75,10 @@
 - name: "Install Fedora packages: {{ gui_rpm_packages_fedora | sort | join(', ') }}"
   dnf:
     name: "{{ gui_rpm_packages_fedora }}"
-    state: latest
     exclude: "{{ exclude_packages }}"
+    state: present
+    nobest: true
+    skip_broken: true
   when: ansible_distribution == "Fedora"
 
 - name: Disable external repositories
