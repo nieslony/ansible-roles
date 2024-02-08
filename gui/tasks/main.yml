@@ -101,6 +101,25 @@
   include_role:
     name: 01-no-external-repositories
 
+- name: Install kwallet
+  dnf:
+    name:
+        - kf5-kwallet
+        - kwalletmanager5
+        - pam-kwallet
+    state: present
+
+- name: Enable pam_kwallet
+  lineinfile:
+    path: /etc/pam.d/gdm-password
+    line: "{{ item }}"
+    regexp: "^[# ]*{{ item | regex_replace(' +', ' +') }}.*$"
+  loop:
+    - "-auth       optional      pam_kwallet5.so"
+    - "-auth       optional      pam_kwallet.so"
+    - "-session    optional      pam_kwallet5.so auto_start"
+    - "-session    optional      pam_kwallet.so auto_start"
+
 - name: Install cups client.conf
   template:
     src: client.conf
