@@ -191,6 +191,7 @@
     service: "{{ item }}"
     permanent: yes
     state: enabled
+    immediate: yes
   with_items:
     - http
     - https
