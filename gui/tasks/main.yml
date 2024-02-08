@@ -145,12 +145,25 @@
     name: gdm
     enabled: yes
 
-- name: Set default session
+- name: "Set default session: create /etc/accountsservice/user-templates"
+  file:
+    path: /etc/accountsservice/user-templates
+    recurse: true
+    state: directory
+
+- name: "Set default session: copy /usr/share/accountsservice/user-templates/standard"
+  copy:
+    src: /usr/share/accountsservice/user-templates/standard
+    dest: /etc/accountsservice/user-templates
+    remote_src: true
+    force: false
+
+- name: "Set default session: edit /etc/accountsservice/user-templates/standard"
   ini_file:
-    path: /etc/gdm/custom.conf
-    section: daemon
-    option: DefaultSession
-    value: plasma.desktop
+    path: /etc/accountsservice/user-templates/standard
+    section: User
+    option: Session
+    value: plasma
 
 - name: Is gdm running
   command: systemctl is-active gdm.service
