@@ -72,6 +72,17 @@
     dest: /etc/exports
   notify: exportfs
 
+- name: "Create automount keys"
+  ipaautomountkey:
+    ipaadmin_password: "{{ ipaadmin_password }}"
+    location: "{{ automount_location }}"
+    mapname: "{{ automount_map }}"
+    key: "{{ item.automount_key }}"
+    info: "-soft,rsize=65536,wsize=65536,timeo=50 {{ ansible_fqdn }}:{{ item.path }}"
+    state: present
+  loop: "{{ exports }}"
+  when: ipaadmin_password is defined
+
 - name: "Set selinux booleans"
   seboolean:
     name: samba_export_all_rw
@@ -93,6 +104,7 @@
     service: "{{ item }}"
     permanent: yes
     state: enabled
+    immediate: yes
   with_items:
     - samba
     - nfs
