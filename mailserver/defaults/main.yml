@@ -155,7 +155,6 @@ packages_nextcloud:
     - unzip
     - wget
     - yum-utils
-
     - python3-jmespath
 
 nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
@@ -171,7 +170,7 @@ nextcloud_install_apps:
     - mail
     - notes
     - richdocuments
-#    - secrets
+    - secrets
     - spreed
     - tasks
     - user_saml
