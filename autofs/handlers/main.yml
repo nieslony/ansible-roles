@@ -3,3 +3,4 @@
   service:
     name: autofs
     state: restarted
+  listen: restart_autofs

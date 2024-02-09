@@ -1,4 +1,24 @@
 # tasks file for autofs
+- name: "Find automount location"
+  slurp:
+    src: /etc/sssd/sssd.conf
+  register: sssd_conf
+
+- set_fact:
+    sssd_automount_location: >-
+        {{ sssd_conf['content']
+                | b64decode
+                | regex_search('ipa_automount_location *= *(.*)', multiline=True)
+        }}
+
+- name: "Configure automount from IPA"
+  command:
+    cmd: "ipa-client-automount --location={{ autofs_location }} --unattended"
+  when:
+    - autofs_location is defined
+    - autofs_location | length > 0
+    - sssd_automount_location == ""
+
 - name: "autofs: Configure autofs.conf"
   ini_file:
     path: /etc/autofs.conf
@@ -6,7 +26,7 @@
     option: "{{ item.key }}"
     value: "{{ item.value }}"
   with_dict: "{{ autofs_options }}"
-  notify: Restart autofs
+  notify: restart_autofs
 
 - name: "autofs: Start and enable autofs"
   service:
