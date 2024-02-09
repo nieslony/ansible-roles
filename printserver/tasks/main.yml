@@ -158,8 +158,12 @@
 - name: "Don't create self signed cert"
   lineinfile:
     path: /etc/cups/cups-files.conf
-    regexp: '^#?CreateSelfSignedCerts .*'
-    line: 'CreateSelfSignedCerts no'
+    regexp: "^[# ]*{{ (item | split(' '))[0] }} +.*$"
+    line: "{{ item }}"
+  loop:
+    - "CreateSelfSignedCerts no"
+    - "ServerKeychain /etc/pki/cups"
+  notify: restart_cups
 
 - name: "Start cups"
   service:
