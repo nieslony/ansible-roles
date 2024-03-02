@@ -179,11 +179,16 @@
   register: stat_ssl_conf
   changed_when: no
 
-- name: "Rename ssl.conf"
-  command:
-    cmd: mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.disabled
-    creates: /etc/httpd/conf.d/ssl.conf.disabled
-  when: stat_ssl_conf.stat.exists
+- block:
+    - name: "Rename ssl.conf"
+      command:
+        cmd: mv /etc/httpd/conf.d/ssl.conf /etc/httpd/conf.d/ssl.conf.disabled
+
+    - name: "Create empty ssl.conf"
+      file:
+        path: /etc/httpd/conf.d/ssl.conf
+        state: touch
+  when: stat_ssl_conf.stat.exists and stat_ssl_conf.stat.size > 0
   notify: restart_httpd
 
 - name: Open http/https in firewall
