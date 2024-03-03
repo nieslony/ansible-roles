@@ -45,6 +45,7 @@ gui_rpm_packages:
   - cdrskin
   - cheese
   - clevis-dracut
+  - dropbox
   - flac
   - joe
   - k3b
@@ -55,6 +56,9 @@ gui_rpm_packages:
   - konqueror
   - lame
   - libdvdcss
+  - nautilus-dropbox
+  - nextcloud-client-dolphin
+  - nextcloud-client-nautilus
   - plasma-nm-fortisslvpn
   - thunderbird
   - unrar
