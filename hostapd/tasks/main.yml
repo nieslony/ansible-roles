@@ -1,2 +1,73 @@
 ---
 # tasks file for hostapd
+- name: "Install kernel-ml"
+  dnf:
+    state: present
+    name:
+      - kernel-ml
+      - kernel-ml-modules-extra
+  register: install_kernel
+
+- block:
+  - name: "Reboot"
+    reboot:
+
+  - name: "Gather facts again"
+    setup:
+  when: install_kernel.changed
+
+- name: "Find wifi adapter"
+  set_fact:
+    wifi_adapter: '{{ item }}'
+  loop: "{{ ansible_facts.interfaces }}"
+  when: item.startswith("wl")
+
+- name: "Fail if no wifi adapter found"
+  fail:
+    msg: "No wifi adapter found"
+  when: wifi_adapter is undefined or wifi_adapter == ""
+
+- name: "Install packages"
+  dnf:
+    state: present
+    name:
+      - hostapd
+      - wireless-regdb
+      - iw
+
+- name: "Configure bridge {{ bridge_name }}"
+  nmcli:
+    type: bridge
+    conn_name: "{{ bridge_name }}"
+    ifname: "{{ bridge_name }}"
+    state: present
+    autoconnect: yes
+    stp: no
+  notify: restart_networkmanager
+
+- name: "Add NIC {{ bridge_slave_if }} to bridge"
+  nmcli:
+    type: bridge-slave
+    conn_name: "{{ bridge_name }}-{{ bridge_slave_if }}"
+    ifname: "{{ bridge_slave_if }}"
+    state: present
+    master: "{{ bridge_name }}"
+    autoconnect: yes
+  when: bridge_slave_if != ""
+  notify: restart_networkmanager
+
+- name: "Enable bridge"
+  command: "nmcli con up {{ bridge_name }}-{{ bridge_slave_if }}"
+  changed_when: no
+
+- name: "Install hostapd.conf"
+  template:
+    src: hostapd.conf
+    dest: /etc/hostapd/hostapd.conf
+  notify: restart_hostapd
+
+- name: "Start hostapd"
+  service:
+    name: hostapd
+    state: started
+    enabled: yes

@@ -1,2 +1,13 @@
 ---
 # handlers file for hostapd
+- name: "Restart NetworkManager"
+  service:
+    name: NetworkManager
+    state: restarted
+  listen: restart_networkmanager
+
+- name: "Restart hostapd"
+  service:
+    name: hostapd
+    state: restarted
+  listen: restart_hostapd

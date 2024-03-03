@@ -1,2 +1,8 @@
 ---
 # defaults file for hostapd
+bridge_name: bridge0
+bridge_slave_if: eth1
+ssid: "testing"
+channel: 1
+wpa_password: "changeme"
+countty_code:
