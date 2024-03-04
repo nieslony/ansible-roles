@@ -25,11 +25,18 @@
         "{{ data_volumes | dict2items }}"
   when: system_volume_group is defined
 
+- name: "Create media dirs on root filesystem"
+  file:
+    path: "/data/{{ item.key }}"
+    state: directory
+  loop:
+    "{{ data_volumes | dict2items }}"
+  when: system_volume_group is undefined
+
 - name: "Install minidlna"
   dnf:
     name: minidlna
     state: latest
-
 
 - name: "Set media permissions"
   file:
