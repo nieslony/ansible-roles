@@ -3,6 +3,10 @@
 bridge_name: bridge0
 bridge_slave_if: eth1
 ssid: "testing"
-channel: 1
-wpa_password: "changeme"
-countty_code:
+channel: 48
+wpa_password: changeme
+country_code: AT
+
+radius_server:
+radius_port: 1812
+radius_sharedsecret: changeme

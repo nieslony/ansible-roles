@@ -27,13 +27,21 @@
     msg: "No wifi adapter found"
   when: wifi_adapter is undefined or wifi_adapter == ""
 
-- name: "Install packages"
-  dnf:
-    state: present
-    name:
-      - hostapd
-      - wireless-regdb
-      - iw
+- name: "Add NetworkManager plugin"
+  ini_file:
+    path: /etc/NetworkManager/NetworkManager.conf
+    section: main
+    option: plugins
+    value: keyfile
+  notify: restart_networkmanager
+
+- name: "Ignore wifi interfaces by NetworkManager"
+  copy:
+    dest: /etc/NetworkManager/conf.d/99-unmanaged-devices.conf
+    content: |
+        [keyfile]
+        unmanaged-devices=interface-name:wl*
+  notify: restart_networkmanager
 
 - name: "Configure bridge {{ bridge_name }}"
   nmcli:
@@ -56,9 +64,21 @@
   when: bridge_slave_if != ""
   notify: restart_networkmanager
 
+- name: "Flush handlers"
+  meta: flush_handlers
+
 - name: "Enable bridge"
   command: "nmcli con up {{ bridge_name }}-{{ bridge_slave_if }}"
   changed_when: no
+
+- name: "Install packages"
+  dnf:
+    state: present
+    name:
+      - hostapd
+      - iw
+      - show-hotspot-settings
+      - wireless-regdb
 
 - name: "Install hostapd.conf"
   template:
@@ -66,8 +86,11 @@
     dest: /etc/hostapd/hostapd.conf
   notify: restart_hostapd
 
-- name: "Start hostapd"
+- name: "Start services"
   service:
-    name: hostapd
+    name: "{{ item }}"
     state: started
     enabled: yes
+  loop:
+    - hostapd
+    - httpd
