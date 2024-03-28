@@ -36,9 +36,9 @@
 
 - name: "Get keytab {{ keytab }}"
   shell:
-    cmd: |
-        kinit -k
-        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }}
+    cmd: >
+        kinit -k &&
+        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }} &&
         kdestroy
     creates: "{{ keytab }}"
 
