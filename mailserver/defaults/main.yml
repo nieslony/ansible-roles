@@ -146,6 +146,7 @@ packages_nextcloud:
     - php-pecl-apcu
     - php-pecl-redis
     - php-process
+    - php-smbclient
     - php-sodium
     - php-xml
     - php-zip
@@ -166,15 +167,22 @@ nextcloud_install_apps:
     - calendar
     - contacts
     - deck
+    - files_accesscontrol
+    - files_automatedtagging
+    - files_retention
+    - forms
     - groupfolders
     - mail
     - notes
     - richdocuments
+    - richdocumentscode
     - secrets
     - spreed
     - tasks
     - user_saml
 nextcloud_enable_apps:
+    - admin_audit
+    - files_external
     - twofactor_totp
     - user_ldap
 nextcloud_user_saml_config:
@@ -187,7 +195,6 @@ nextcloud_ipa_users:
       password: ohnaChahr5eeshie
       mail: "nextcloud@{{ mydomain }}"
       givenname: Nextcloud
-      displayname: Nextcloud
       sn: Mail
     ldap:
       name: ldap-nextcloud
@@ -195,7 +202,6 @@ nextcloud_ipa_users:
       password: ohnaChahr5eeshie
       mail:
       givenname: Nextcloud
-      displayname: Nextcloud
       sn: LDAP
 nextcloud_system_config:
     - { key: "trusted_domains 1", value: "cloud.{{ mydomain }}" }
@@ -212,6 +218,7 @@ nextcloud_system_config:
     - { key: "mail_smtpauth", value: "1" }
     - { key: "mail_smtpname", value: "{{ nextcloud_ipa_users.mail.name }}" }
     - { key: "mail_smtppassword", value: "{{ nextcloud_ipa_users.mail.password }}" }
+    - { key: "maintenance_window_start", value: 1, type: "integer" }
     - { key: "filelocking.enabled", value: "true" }
     - { key: "memcache.locking", value: '\OC\Memcache\Redis' }
     - { key: "redis host", value: localhost }

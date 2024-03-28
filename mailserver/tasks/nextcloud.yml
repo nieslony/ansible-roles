@@ -153,14 +153,19 @@
             --database-pass={{ roundcube_password }}
             --admin-user={{ nextcloud_admin_user }}
             --admin-pass={{ nextcloud_admin_password }}
-            --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud
+            --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud/data
     creates: /var/www/html/cloud.{{ mydomain }}/nextcloud/config/config.php
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "nextcloud : config system"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} config:system:set {{ item.key }} --value='{{ item.value }}'"
+  command: |-
+    {{ nextcloud_occ }}
+    config:system:set
+    {{ item.key }}
+    {{ item.type is defined | ternary(item.type, "") }}
+    --value='{{ item.value }}'
   with_items: "{{ nextcloud_system_config }}"
 
 - name: "nextcloud : setup crontab"
@@ -174,6 +179,12 @@
   copy:
     src: nextcloud_htaccess
     dest: "/var/www/html/cloud.{{ mydomain }}/nextcloud/.htaccess"
+
+- name: "nextcloud : create symlink ocm-provider"
+  file:
+    path: "/var/www/html/cloud.{{ mydomain }}/nextcloud/ocm-provider"
+    src: "/var/www/html/cloud.{{ mydomain }}/nextcloud/ocs-provider"
+    state: link
 
 - name: "nextcloud : Get admin's display name"
   become: yes
