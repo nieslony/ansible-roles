@@ -1,7 +1,7 @@
 ---
 # defaults file for hostapd
 bridge_name: bridge0
-bridge_slave_if: eth1
+bridge_slave_if: "{{ ansible_interfaces | select('search', 'eth.*|en.*') | first }}"
 ssid: "testing"
 channel: 48
 wpa_password: changeme
