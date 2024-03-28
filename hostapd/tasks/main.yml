@@ -61,7 +61,7 @@
     state: present
     master: "{{ bridge_name }}"
     autoconnect: yes
-  when: bridge_slave_if != ""
+  when: bridge_slave_if.startswith("eth") or bridge_slave_if.startswith("en")
   notify: restart_networkmanager
 
 - name: "Flush handlers"
