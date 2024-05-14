@@ -134,7 +134,7 @@
 
 - name: "Get SSL certificate for webserver"
   command:
-    cmd: |
+    cmd: >
         ipa-getcert request
             --keyfile {{ ssl_key_file }}
             --certfile {{ ssl_cert_file }}
@@ -146,6 +146,8 @@
     creates: "{{ ssl_cert_file }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+    http_proxy: ""
+    https_proxy: ""
   notify: restart_httpd
 
 - name: Copy default_vhost.conf
