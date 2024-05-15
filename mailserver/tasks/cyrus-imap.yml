@@ -57,6 +57,7 @@
 - name: "cyrus-imapd : Create services"
   ipa_service:
     name: "{{ item }}/{{ ansible_fqdn }}"
+    ipa_host: "{{ ipa_server | default(omit) }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
     http_proxy: ""
