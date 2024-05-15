@@ -43,24 +43,34 @@
 
 - name: "Create CNAMES and host objects remote with admin password"
   block:
-    - name: "Create CNAMES for vhosts {{ vhosts }}"
-      ipa_dnsrecord:
-        ipa_pass: "{{ ipaadmin_password }}"
-        zone_name: "{{ item.split('.')[1:] | join('.') }}"
-        record_type: CNAME
-        record_value: "{{ ansible_fqdn }}."
-        record_name: "{{ item | split('.') | first }}"
-      when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+    - debug:
+        msg: "Create CNAMES and host objects remote with admin password"
 
     - name: "Create host objects {{ vhosts }}"
       ipa_host:
+        ipa_host: "{{ ipa_server | default(omit) }}"
         ipa_pass: "{{ ipaadmin_password }}"
         fqdn: "{{ item }}"
         state: present
         random_password: yes
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
+
+    - name: "Create CNAMES for vhosts {{ vhosts }}"
+      ipa_dnsrecord:
+        ipa_pass: "{{ ipaadmin_password }}"
+        ipa_host: "{{ ipa_server | default(omit) }}"
+        zone_name: "{{ item.split('.')[1:] | join('.') }}"
+        record_type: CNAME
+        record_value: "{{ ansible_fqdn }}."
+        record_name: "{{ item | split('.') | first }}"
+      when:
+        - item != ansible_fqdn
+        - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
+      loop: "{{ vhosts }}"
+      environment:
+        http_proxy: ""
+        https_proxy: ""
 
     - name: "Add managedby {{ ansible_fqdn }}"
       shell: |
@@ -70,22 +80,14 @@
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
   when: ipaadmin_password is defined
-
-- name: "Find /etc/foreman-proxy/freeipa.keytab"
-  stat:
-    path: /etc/foreman-proxy/freeipa.keytab
-  register: stat_freeipa_keytab
+  environment:
+    http_proxy: ""
+    https_proxy: ""
 
 - name: "Create CNAMES and host objects remote with keytab"
   block:
-    - name: "Create CNAMES for vhosts {{ vhosts }}"
-      ipa_dnsrecord:
-        zone_name: "{{ item.split('.')[1:] | join('.') }}"
-        record_type: CNAME
-        record_value: "{{ ansible_fqdn }}."
-        record_name: "{{ item | split('.') | first }}"
-      when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+    - debug:
+        msg: "Create CNAMES and host objects remote with keytab"
 
     - name: "Create host objects {{ vhosts }}"
       ipa_host:
@@ -96,6 +98,17 @@
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
 
+    - name: "Create CNAMES for vhosts {{ vhosts }}"
+      ipa_dnsrecord:
+        zone_name: "{{ item.split('.')[1:] | join('.') }}"
+        record_type: CNAME
+        record_value: "{{ ansible_fqdn }}."
+        record_name: "{{ item | split('.') | first }}"
+      when:
+        - item != ansible_fqdn
+        - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
+      loop: "{{ vhosts }}"
+
     - name: "Add managedby {{ ansible_fqdn }}"
       shell: |
         echo "{{ ipaadmin_password }}" | kinit admin
@@ -103,16 +116,17 @@
         kdestroy
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
-  when: stat_freeipa_keytab.stat.exists
+  when: is_realmproxy
+  delegate_to: 127.0.0.1
   environment:
-    KRB5_CLIENT_KTNAME: /etc/foreman-proxy/freeipa.keytab
+    KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
     http_proxy: ""
     https_proxy: ""
 
 - name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
   ipa_service:
     name: "HTTP/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server }}"
+    ipa_host: "{{ ipa_server | default(omit) }}"
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
     http_proxy: ""
