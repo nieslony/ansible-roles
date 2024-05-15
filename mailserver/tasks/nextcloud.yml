@@ -24,25 +24,38 @@
 
 - name: "nextcloud : find nextcloud users"
   shell:
-    cmd: "for i in {{ nextcloud_ipa_users.keys() | list | join(' ') }} ; do getent passwd $i | awk -F: '{ print $1; }' ; done"
+    cmd: >
+        for i in {{
+            nextcloud_ipa_users.values()
+            | selectattr('name')
+            | map(attribute='name')
+            | join(' ')
+        }} ; do
+            getent passwd $i | awk -F: '{ print $1; }' ;
+        done
   register: found_users
   changed_when: no
 
 - set_fact:
-    create_users: "{{ nextcloud_ipa_users | ansible.utils.remove_keys(found_users.stdout_lines) }}"
+    create_users: {}
+
+- set_fact:
+    create_users: "{{ create_users | combine({item.key: item.value}) }}"
+  when: item.value.name not in found_users.stdout_lines
+  loop: "{{ nextcloud_ipa_users | dict2items }}"
 
 - name: "nextcloud : Create email users {{ create_users.keys() | list }} with keytab"
   shell:
     cmd: >-
-      ipa user-add "{{ item.name }}"
-      --displayname="{{ item.displayname }}"
+      ipa user-add "{{ item.value.name }}"
+      --displayname="{{ item.value.displayname }}"
       --password
       --password-expiration="2050-12-31Z"
-      --email="{{ item.mail }}"
-      --first="{{ item.givenname }}"
-      --last="{{ item.sn }}"
+      --email="{{ item.value.mail }}"
+      --first="{{ item.value.givenname }}"
+      --last="{{ item.value.sn }}"
     stdin: "{{ item.password }}\n{{ item.password }}\n"
-  loop: "{{ create_users }}"
+  loop: "{{ create_users | dict2items }}"
   delegate_to: 127.0.0.1
   environment:
     KRB5_CLIENT_KTNAME: /etc/foreman-proxy/freeipa.keytab
@@ -51,23 +64,23 @@
     HOME: /tmp
   when: is_realmproxy
 
-- name: "nextcloud : Create email users {{ create_users.keys() | list }} with password"
+- name: "nextcloud : Create email users {{ create_users.keys() | list }} with admin password"
   ipa_user:
-    name: "{{ item.name }}"
-    displayname: "{{ item.displayname }}"
-    password: "{{ item.password }}"
-    mail: "{{ item.mail }}"
-    givenname: "{{ item.givenname }}"
-    sn: "{{ item.sn }}"
+    name: "{{ item.value.name }}"
+    displayname: "{{ item.value.displayname }}"
+    password: "{{ item.value.password }}"
+    mail: "{{ item.value.mail | default(omit) }}"
+    givenname: "{{ item.value.givenname }}"
+    sn: "{{ item.value.sn }}"
     krbpasswordexpiration: "2050-12-31"
     state: present
     update_password: on_create
     ipa_pass: "{{ ipaadmin_password }}"
-  loop: "{{ create_users }}"
+    ipa_host: "{{ ipa_server | default(omit) }}"
+  loop: "{{ create_users | dict2items }}"
   environment:
     http_proxy: ""
     https_proxy: ""
-  delegate_to: 127.0.0.1
   when: ipaadmin_password is defined
 
 - name: "nextcloud : Download and install software"
