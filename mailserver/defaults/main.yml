@@ -158,6 +158,7 @@ packages_nextcloud:
     - yum-utils
     - python3-jmespath
 
+nextcloud_release: 28
 nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
 nextcloud_admin_user: nc-admin
 nextcloud_admin_displayname: "Nextcloud Administrator"
