@@ -92,3 +92,4 @@
     - organization
     - is_realmproxy
     - ipa_dns_domains
+    - realm_keytab
