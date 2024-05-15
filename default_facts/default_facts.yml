@@ -50,3 +50,45 @@
   when:
    - ansible_lvm.vgs is defined
    - ansible_lvm.vgs | length > 0
+
+- set_fact:
+    realm_keytab: /etc/foreman-proxy/freeipa.keytab
+
+- name: "Find {{ ream_keytab }}"
+  stat:
+    path: "{{ realm_keytab }}"
+  when: ipaadmin_password is not defined
+  delegate_to: 127.0.0.1
+  register: stat_freeipa_keytab
+
+- set_fact:
+    is_realmproxy: "{{ stat_freeipa_keytab.stat is defined and stat_freeipa_keytab.stat.exists }}"
+
+- name: "Find ipa domains"
+  shell:
+    cmd: |
+        kinit -k
+        ipa dnszone-find --raw |
+            awk -F ": *" '
+                /idnsname/ { gsub(/\.$/, "", $2); if (! /.in-addr.arpa/) print $2; }
+            '
+        kdestroy
+  register: ipa_domains_ret
+
+- name: "Set IPA domains {{ ipa_domains_ret.stdout_lines | join(', ') }}"
+  set_fact:
+    ipa_dns_domains: "{{ ipa_domains_ret.stdout_lines }}"
+
+- name: "Exported variables"
+  debug:
+    var: "{{ item }}"
+  loop:
+    - mx_record
+    - ldap_record
+    - ipa_server_record
+    - mail_server
+    - ipa_server
+    - ldap_servers
+    - organization
+    - is_realmproxy
+    - ipa_dns_domains
