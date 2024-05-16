@@ -54,11 +54,12 @@
 - set_fact:
     realm_keytab: /etc/foreman-proxy/freeipa.keytab
 
-- name: "Find {{ ream_keytab }}"
+- name: "Find {{ realm_keytab }}"
   stat:
     path: "{{ realm_keytab }}"
   when: ipaadmin_password is not defined
   delegate_to: 127.0.0.1
+  become: false
   register: stat_freeipa_keytab
 
 - set_fact:
