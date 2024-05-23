@@ -45,6 +45,7 @@ gui_rpm_packages:
   - cdrskin
   - cheese
   - clevis-dracut
+  - digikam
   - dropbox
   - flac
   - joe
