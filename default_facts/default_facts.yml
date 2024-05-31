@@ -90,7 +90,9 @@
     - mail_server
     - ipa_server
     - ldap_servers
+    - ldap_base_dn
     - organization
     - is_realmproxy
     - ipa_dns_domains
     - realm_keytab
+    - system_volume_group
