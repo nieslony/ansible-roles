@@ -56,6 +56,7 @@ rpm_devel_packages:
   - virt-install
   - virt-manager
   - virtio-win
+  - xpath
 
 rpm_devel_packages_centos: "{{ rpm_devel_extra_packages_centos + rpm_devel_packages }}"
 rpm_devel_packages_fedora: "{{ rpm_devel_extra_packages_fedora + rpm_devel_packages }}"
