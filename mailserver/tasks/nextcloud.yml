@@ -253,7 +253,7 @@
 - name: "nextcloud : Find installed apps"
   find:
     recurse: no
-    paths: "/var/www/html/mail_cloud_fqdn{{ mail_cloud_fqdn }}/nextcloud/apps"
+    paths: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/apps"
     file_type: directory
   register: installed_apps
 
@@ -298,16 +298,33 @@
   command: "{{ nextcloud_occ }} config:app:set user_saml {{ item.key}} --value {{ item.value }}"
   with_items: "{{ nextcloud_user_saml_config | dict2items }}"
 
+- name: "nextcloud : Find ldap config"
+  become: yes
+  become_user: apache
+  command: "{{ nextcloud_occ }} ldap:show-config --output=json --show-password"
+  register: nc_ldap_config
+  changed_when: false
+
+- set_fact:
+    current_ldap_config: "{{ nc_ldap_config.stdout | from_json }}"
+
 - name: "nextcloud : Create ldap config"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:create-empty-config"
+  when: nc_ldap_config.stdout | length == 0
 
 - name: "nextcloud : Configure app user_ldap"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:set-config s01 {{ item.key }} '{{ item.value }}'"
   with_items: "{{ nextcloud_ldap_config | dict2items }}"
+  when: >
+    nc_ldap_config.stdout | length == 0
+    or
+    current_ldap_config.s01[item.key] is not defined
+    or
+    current_ldap_config.s01[item.key] != item.value
 
 - name: "nextcloud : Test app user_ldap"
   become: yes
