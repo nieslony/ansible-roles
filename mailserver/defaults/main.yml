@@ -230,8 +230,8 @@ nextcloud_system_config:
     - { key: "redis password", value: }
 nextcloud_ldap_config:
     hasMemberOfFilterSupport: 1
-    ldapAgentName: "uid=rossi,cn=users,cn=accounts,dc=linux,dc=lab"
-    ldapAgentPassword: "UserPassword.1"
+    ldapAgentName: "uid={{ nextcloud_ipa_users.ldap.name }},cn=users,cn=accounts,{{ ldap_base_dn }}"
+    ldapAgentPassword: "{{ nextcloud_ipa_users.ldap.password }}"
     ldapAttrAddress: ""
     ldapAttrBiography: ""
     ldapAttrFediverse: ""
@@ -254,7 +254,7 @@ nextcloud_ldap_config:
     ldapConfigurationActive: 1
     ldapConnectionTimeout: "15"
     ldapDefaultPpolicyDn: ""
-    ldapDn: "uid=rossi,cn=users,cn=accounts,dc=linux,dc=lab"
+    ldapDn: "uid={{ nextcloud_ipa_users.ldap.name }},cn=users,cn=accounts,{{ ldap_base_dn }}"
     ldapDynamicGroupMemberUrl: ""
     ldapEmailAttribute: "mail"
     ldapExperiencedAdmin: "0"
