@@ -7,7 +7,7 @@
   vars:
     amavis_conf:
       myhostname: "{{ ansible_fqdn }}"
-      mydomain: "{{ mydomain }}"
+      mydomain: "{{ mail_domain }}"
       inet_socket_bind: "127.0.0.1"
   lineinfile:
     path: /etc/amavisd/amavisd.conf

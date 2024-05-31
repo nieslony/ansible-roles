@@ -1,7 +1,9 @@
 # defaults file for nextcloud
 myhostname: "{{ ansible_fqdn }}"
-mydomain: "{{ maildomain if maildomain is defined else ansible_domain }}"
-organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
+mail_domain: "{{ maildomain | default(ansible_domain) }}"
+mail_cloud_fqdn: "cloud.{{ mail_domain }}"
+mail_autodiscover_fqdn: "autodiscover.{{ mail_domain }}"
+mail_organization: "{{ foreman['organization'] | default(ansible_domain) }}"
 
 logical_volumes:
   - { name: "var", size: "4G", mount_point: /var }
@@ -24,7 +26,7 @@ master_cfg_opts:
 
 main_cfg_opts:
     myhostname: "{{ myhostname }}"
-    mydomain: "{{ mydomain }}"
+    mydomain: "{{ mail_domain }}"
     mydestination:
       - "$myhostname"
       - "$mydomain"
@@ -159,7 +161,7 @@ packages_nextcloud:
     - python3-jmespath
 
 nextcloud_release: 28
-nextcloud_occ: "/var/www/html/cloud.{{ mydomain }}/nextcloud/occ"
+nextcloud_occ: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/occ"
 nextcloud_admin_user: nc-admin
 nextcloud_admin_displayname: "Nextcloud Administrator"
 nextcloud_admin_password: "AdminPassword.1"
@@ -194,7 +196,7 @@ nextcloud_ipa_users:
       name: mail-nextcloud
       displayname: Nextcloud
       password: ohnaChahr5eeshie
-      mail: "nextcloud@{{ mydomain }}"
+      mail: "nextcloud@{{ mail_domain }}"
       givenname: Nextcloud
       sn: Mail
     ldap:
@@ -205,15 +207,15 @@ nextcloud_ipa_users:
       givenname: Nextcloud
       sn: LDAP
 nextcloud_system_config:
-    - { key: "trusted_domains 1", value: "cloud.{{ mydomain }}" }
-    - { key: "overwrite.cli.url", value: "https://cloud.{{ mydomain }}/nextcloud" }
+    - { key: "trusted_domains 1", value: "{{ mail_cloud_fqdn }}" }
+    - { key: "overwrite.cli.url", value: "https://{{ mail_cloud_fqdn }}/nextcloud" }
     # - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
     - { key: "memcache.local", value: '\OC\Memcache\APCu' }
     - { key: "default_phone_region", value: "AT" }
     - { key: "mail_from_address", value: "{{ nextcloud_ipa_users.mail.mail | split('@') | first }}" }
     - { key: "mail_smtpmode", value: "smtp" }
     - { key: "mail_sendmailmode", value: "smtp" }
-    - { key: "mail_domain", value: "{{ mydomain }}" }
+    - { key: "mail_domain", value: "{{ mail_domain }}" }
     - { key: "mail_smtphost", value: "{{ ansible_fqdn }}" }
     - { key: "mail_smtpport", value: "587" }
     - { key: "mail_smtpauth", value: "1" }

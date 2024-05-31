@@ -18,7 +18,7 @@
 
 - name: "nextcloud : Create nextcloud folder"
   stat:
-    path:  /var/www/html/cloud.{{ mydomain }}/nextcloud
+    path:  /var/www/html/{{ mail_cloud_fqdn }}/nextcloud
   register: stat_nextcloud
   changed_when: no
 
@@ -93,7 +93,7 @@
     - name: "nextcloud : Unpack software"
       unarchive:
         src: /tmp/latest-{{ nextcloud_release }}.zip
-        dest: /var/www/html/cloud.{{ mydomain }}
+        dest: /var/www/html/{{ mail_cloud_fqdn }}
         remote_src: yes
 
     - name: "nextcloud : Remove tmp file"
@@ -103,7 +103,7 @@
 
     - name: "nextcloud : chown apache"
       file:
-        name: /var/www/html/cloud.{{ mydomain }}/nextcloud
+        name: /var/www/html/{{ mail_cloud_fqdn }}/nextcloud
         owner: apache
         group: apache
         recurse: yes
@@ -174,7 +174,7 @@
 - name: "nextcloud : copy apache config"
   template:
     src: nextcloud.conf
-    dest: /etc/httpd/conf.d/cloud.{{ mydomain }}.conf.inc
+    dest: /etc/httpd/conf.d/{{ mail_cloud_fqdn }}.conf.inc
   notify: restart_httpd
 
 - name: "nextcloud : Setup nextcloud with occ"
@@ -190,8 +190,8 @@
             --database-pass={{ roundcube_password }}
             --admin-user={{ nextcloud_admin_user }}
             --admin-pass={{ nextcloud_admin_password }}
-            --data-dir=/var/www/html/cloud.{{ mydomain }}/nextcloud/data
-    creates: /var/www/html/cloud.{{ mydomain }}/nextcloud/config/config.php
+            --data-dir=/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/data
+    creates: /var/www/html/{{ mail_cloud_fqdn }}/nextcloud/config/config.php
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "nextcloud : config system"
@@ -209,18 +209,18 @@
   cron:
     name: nextcloud
     user: apache
-    job: "php -f /var/www/html/cloud.{{ mydomain }}/nextcloud/cron.php"
+    job: "php -f /var/www/html/{{ mail_cloud_fqdn }}/nextcloud/cron.php"
     minute: "*/5"
 
 - name: "nextcloud : Update .htaccess"
   copy:
     src: nextcloud_htaccess
-    dest: "/var/www/html/cloud.{{ mydomain }}/nextcloud/.htaccess"
+    dest: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/.htaccess"
 
 - name: "nextcloud : create symlink ocm-provider"
   file:
-    path: "/var/www/html/cloud.{{ mydomain }}/nextcloud/ocm-provider"
-    src: "/var/www/html/cloud.{{ mydomain }}/nextcloud/ocs-provider"
+    path: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/ocm-provider"
+    src: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/ocs-provider"
     state: link
 
 - name: "nextcloud : Get admin's display name"
@@ -252,8 +252,8 @@
 
 - name: "nextcloud : Find installed apps"
   find:
-    paths: "/var/www/html/cloud.{{ mydomain }}/nextcloud/apps"
     recurse: no
+    paths: "/var/www/html/mail_cloud_fqdn{{ mail_cloud_fqdn }}/nextcloud/apps"
     file_type: directory
   register: installed_apps
 

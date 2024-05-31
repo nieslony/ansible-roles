@@ -261,14 +261,14 @@ $config['ldap_public']['global_addressbook'] = [
     'departments' => [
       'name'    => 'Company Departments',
       'scope'   => 'list',
-      'base_dn' => 'ou=Groups,dc=mydomain,dc=com',
+      'base_dn' => 'ou=Groups,{{ ldap_base_dn }}',
       'filter'  => '(|(objectclass=groupofuniquenames)(objectclass=groupofurls))',
       'name_attr' => 'cn',
     ],
     'customers' => [
       'name'    => 'Customers',
       'scope'   => 'sub',
-      'base_dn' => 'ou=Customers,dc=mydomain,dc=com',
+      'base_dn' => 'ou=Customers,{{ ldap_base_dn }}',
       'filter'  => '(objectClass=inetOrgPerson)',
       'name_attr' => 'sn',
     ],
