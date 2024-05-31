@@ -41,6 +41,27 @@
     shell: /sbin/nologin
     system: yes
 
+- name: Scan host objects of vhosts
+  shell: |
+    kinit -k
+    ipa host-show {{ item }} --raw | grep -q "managedby: fqdn={{ ansible_fqdn }}"
+    kdestroy
+  loop: "{{ vhosts }}"
+  register: found_managedby
+  ignore_errors: yes
+  changed_when: no
+
+- set_fact:
+    add_managed: []
+
+- name: Find unmanaged hosts
+  set_fact:
+    add_managed: "{{ add_managed | default([]) + [item.item] }}"
+  with_items: "{{ found_managedby.results }}"
+  when:
+    - item.rc == 1
+    - item.item != ansible_fqdn
+
 - name: "Create CNAMES and host objects remote with admin password"
   block:
     - debug:
@@ -54,8 +75,7 @@
         state: present
         force: yes
         random_password: yes
-      when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+      loop: "{{ add_managed }}"
       environment:
         http_proxy: ""
         https_proxy: ""
@@ -96,6 +116,7 @@
       ipa_host:
         fqdn: "{{ item }}"
         state: present
+        force: true
         random_password: yes
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
@@ -122,8 +143,7 @@
         kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
         ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }} || exit 1
         kdestroy
-      when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+      loop: "{{ add_managed }}"
   when: is_realmproxy
   delegate_to: 127.0.0.1
 
