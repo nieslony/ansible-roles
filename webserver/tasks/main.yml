@@ -52,6 +52,7 @@
         ipa_pass: "{{ ipaadmin_password }}"
         fqdn: "{{ item }}"
         state: present
+        force: yes
         random_password: yes
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
@@ -84,21 +85,26 @@
       loop: "{{ vhosts }}"
   when: ipaadmin_password is defined
 
-- name: "Create CNAMES and host objects remote with keytab"
+- name: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
   block:
     - debug:
-        msg: "Create CNAMES and host objects remote with keytab"
+        msg: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
 
     - name: "Create host objects {{ vhosts }}"
+      vars:
+        ansible_python_interpreter: /bin/python3.6
       ipa_host:
         fqdn: "{{ item }}"
-        managedby_host: "{{ ansible_fqdn }}"
         state: present
         random_password: yes
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
+      environment:
+        KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
 
     - name: "Create CNAMES for vhosts {{ vhosts }}"
+      vars:
+        ansible_python_interpreter: /bin/python3.6
       ipa_dnsrecord:
         zone_name: "{{ item.split('.')[1:] | join('.') }}"
         record_type: CNAME
@@ -108,16 +114,13 @@
         - item != ansible_fqdn
         - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
       loop: "{{ vhosts }}"
+      environment:
+        KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
 
     - name: "Add managedby {{ ansible_fqdn }}"
       shell: |
-        kinit -k -t {{ realm_keytab }}
-        ipa host-add {{ item }} --random
-        ipa dnsrecord-add \
-            {{ item.split('.')[1:] | join('.') }} \
-            {{ item | split('.') | first }} \
-            --cname-hostname={{ ansible_fqdn }}
-        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
+        kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
+        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }} || exit 1
         kdestroy
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
