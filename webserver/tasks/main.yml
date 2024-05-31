@@ -55,6 +55,9 @@
         random_password: yes
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
+      environment:
+        http_proxy: ""
+        https_proxy: ""
 
     - name: "Create CNAMES for vhosts {{ vhosts }}"
       ipa_dnsrecord:
@@ -80,9 +83,6 @@
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
   when: ipaadmin_password is defined
-  environment:
-    http_proxy: ""
-    https_proxy: ""
 
 - name: "Create CNAMES and host objects remote with keytab"
   block:
@@ -111,17 +111,18 @@
 
     - name: "Add managedby {{ ansible_fqdn }}"
       shell: |
-        echo "{{ ipaadmin_password }}" | kinit admin
+        kinit -k -t {{ realm_keytab }}
+        ipa host-add {{ item }} --random
+        ipa dnsrecord-add \
+            {{ item.split('.')[1:] | join('.') }} \
+            {{ item | split('.') | first }} \
+            --cname-hostname={{ ansible_fqdn }}
         ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
         kdestroy
       when: item != ansible_fqdn
       loop: "{{ vhosts }}"
   when: is_realmproxy
   delegate_to: 127.0.0.1
-  environment:
-    KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
-    http_proxy: ""
-    https_proxy: ""
 
 - name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
   ipa_service:
