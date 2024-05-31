@@ -4,7 +4,7 @@
   changed_when: no
 
 - name: "DNS lookup _ldap._tcp.{{ ansible_domain }}/SRV"
-  shell: "host -t srv _ldap._tcp.{{ ansible_domain }} | awk '{ print substr($NF, 1, length($NF)-1); }'"
+  shell: "host -t srv _ldap._tcp.{{ ansible_domain }} | awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'"
   register: ldap_record
   changed_when: no
 
