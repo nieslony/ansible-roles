@@ -7,7 +7,7 @@ Enabled=true
 Parent=autoconf
 
 [Authentication]
-Host=mail.linux.lab
+Host={{ evolution_mail_server }}
 Method=GSSAPI
 Port=587
 ProxyUid=system-proxy

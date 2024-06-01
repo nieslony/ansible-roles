@@ -1,3 +1,4 @@
 ---
 # defaults file for evolution
-dav_server: cloud.test.lab
+evolution_dav_server: "cloud.{{ ansible_domain }}"
+evolution_mail_server: "{{ mail_server }}"

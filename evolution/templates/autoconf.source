@@ -15,7 +15,7 @@ MarkSeen=inconsistent
 MarkSeenTimeout=1500
 
 [Authentication]
-Host=mail.linux.lab
+Host={{ evolution_mail_server }}
 Method=GSSAPI
 Port=143
 ProxyUid=system-proxy

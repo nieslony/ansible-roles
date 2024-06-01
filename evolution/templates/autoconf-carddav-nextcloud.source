@@ -7,7 +7,7 @@ Enabled=true
 Parent=carddav-stub
 
 [Authentication]
-Host={{ dav_server }}
+Host={{ evolution_dav_server }}
 Method=GSSAPI
 Port=443
 ProxyUid=system-proxy
