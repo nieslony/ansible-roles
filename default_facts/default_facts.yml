@@ -75,6 +75,7 @@
             '
         kdestroy
   register: ipa_domains_ret
+  changed_when: false
 
 - name: "Set IPA domains {{ ipa_domains_ret.stdout_lines | join(', ') }}"
   set_fact:
@@ -96,3 +97,4 @@
     - ipa_dns_domains
     - realm_keytab
     - system_volume_group
+  when: debug_defaults is defined
