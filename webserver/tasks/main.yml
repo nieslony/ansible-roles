@@ -156,6 +156,40 @@
     http_proxy: ""
     https_proxy: ""
 
+- name: "Find krbprincipalname of service HTTP/{{ ansible_fqdn }}"
+  shell: |
+    kinit -k
+    ipa service-show --raw HTTP/{{ ansible_fqdn }} | awk '/krbprincipalname:/ {
+        split($2, arr, "@");
+        print arr[1];
+    }'
+    kdestroy
+  register: find_krbprincipalname
+  changed_when: no
+
+- block:
+    - name: "Create krbprincipalname {{ find_krbprincipalname.stdout_lines | join(', ') }} of service HTTP/{{ ansible_fqdn }} with keytab"
+      shell: |
+            kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
+            ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
+            kdestroy
+      loop: "{{ vhosts }}"
+      when: item not in find_krbprincipalname.stdout_lines
+      delegate_to: 127.0.0.1
+  when: is_realmproxy
+
+- block:
+    - name: "Create krbprincipalname {{ find_krbprincipalname.stdout_lines | join(', ') }} of service HTTP/{{ ansible_fqdn }} with admin password"
+      shell:
+        cmd: |
+          kinit || exit 1
+          ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
+          kdestroy
+        stdin: "{{ ipaadmin_password }}\n"
+      loop: "{{ vhosts }}"
+      when: item not in find_krbprincipalname.stdout_lines
+  when: ipaadmin_password is defined
+
 - name: "Get keytab"
   shell:
     cmd: |
@@ -179,7 +213,7 @@
             --key-owner apache
             --cert-owner apache
             --principal host/{{ ansible_fqdn }}
-            --dns {{ (vhosts + [ansible_fqdn]) | unique | join(' --dns ') }}
+            --dns {{ (vhosts + [ansible_fqdn]) | intersect(ipa_dns_domains) | unique | join(' --dns ') }}
             --wait
     creates: "{{ ssl_cert_file }}"
   environment:
