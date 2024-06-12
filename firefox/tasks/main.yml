@@ -125,7 +125,7 @@
                     "BookmarkBarEnabled": true,
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
-                    "AuthServerAllowlist": trusted_uris | join(', '),
+                    "AuthServerAllowlist": trusted_uris | map('regex_replace', '^\\*', '') | map('regex_replace', '^([a-z])', '.\\1') | join(', '),
                     "ManagedBookmarks": managed_bookmarks
                 }, recursive=True)
             }}
