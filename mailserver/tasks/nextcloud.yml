@@ -312,7 +312,7 @@
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:create-empty-config"
-  when: nc_ldap_config.stdout | length == 0
+  when: nc_ldap_config.stdout | from_json | length == 0
 
 - name: "nextcloud : Configure app user_ldap"
   become: yes
