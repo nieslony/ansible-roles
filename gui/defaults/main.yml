@@ -90,6 +90,7 @@ gui_extra_themes:
   - constantine-kde-theme
   - constantine-backgrounds-extras
   - constantine-backgrounds-extras-kde
+  - davfs2
   - echo-icon-theme
   - flat-remix-theme
   - gnome-themes-extra
