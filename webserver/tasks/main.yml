@@ -2,25 +2,58 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: Create logocal volume
+- name: "Build vhost_names"
+  set_fact:
+    vhost_names: "{{ (vhost_names is defined) | ternary(vhost_names, []) + [ (item is string) | ternary(item, item.name) ] }}"
+  loop: "{{ vhosts }}"
+
+- name: "Create logical volume for /var/www"
   block:
-    - name: Create volume
+    - name: "Create volume {{ lvm_volume }} with size {{ lvm_volsize_gb }}GB"
       lvol:
-        vg: "{{ lvm_volgroup }}"
+        vg: "{{ system_volume_group }}"
         lv: "{{ lvm_volume }}"
-        size: "{{ lvm_volsize_gb }}"
+        size: "{{ lvm_volsize_gb }}G"
 
     - name: Create filesystem
       filesystem:
         fstype: xfs
-        dev: "/dev/{{ lvm_volgroup }}/{{ lvm_volume }}"
+        dev: "/dev/{{ system_volume_group }}/{{ lvm_volume }}"
 
     - name: Mount file system
       mount:
         path: /var/www
-        src: "/dev/{{ lvm_volgroup }}/{{ lvm_volume }}"
+        src: "/dev/{{ system_volume_group }}/{{ lvm_volume }}"
+        fstype: xfs
         state: mounted
-  when: lvm_volsize_gb > 0
+  when: lvm_volsize_gb > 0 and system_volume_group is defined
+
+- name:  "Create logical volumes for vhosts"
+  block:
+    - name: "Create volumes for vhosts"
+      lvol:
+        vg: "{{ system_volume_group }}"
+        lv: "var_www_{{ item.name }}"
+        size: "{{ item.size_gb }}G"
+      when: item is mapping
+      loop: "{{ vhosts }}"
+
+    - name: "Create filesystems for vhosts"
+      filesystem:
+        fstype: xfs
+        dev: "/dev/{{ system_volume_group }}/var_www_{{ item.name}}"
+      when: item is mapping
+      loop: "{{ vhosts }}"
+
+    - name: "Mount file system for vhosts"
+      mount:
+        path: "/var/www/{{ item.name }}"
+        src: "/dev/{{ system_volume_group }}/var_www_{{ item.name }}"
+        fstype: xfs
+        state: mounted
+      when: item is mapping
+      loop: "{{ vhosts }}"
+  when: system_volume_group is defined
 
 - name: "Install packages: {{ packages | join(', ') }}"
   package:
@@ -46,7 +79,7 @@
     kinit -k
     ipa host-show {{ item }} --raw | grep -q "managedby: fqdn={{ ansible_fqdn }}"
     kdestroy
-  loop: "{{ vhosts }}"
+  loop: "{{ vhost_names }}"
   register: found_managedby
   ignore_errors: yes
   changed_when: no
@@ -67,7 +100,7 @@
     - debug:
         msg: "Create CNAMES and host objects remote with admin password"
 
-    - name: "Create host objects {{ vhosts }}"
+    - name: "Create host objects {{ vhost_names }}"
       ipa_host:
         ipa_host: "{{ ipa_server | default(omit) }}"
         ipa_pass: "{{ ipaadmin_password }}"
@@ -80,7 +113,7 @@
         http_proxy: ""
         https_proxy: ""
 
-    - name: "Create CNAMES for vhosts {{ vhosts }}"
+    - name: "Create CNAMES for vhost {{ vhost_names }}"
       ipa_dnsrecord:
         ipa_pass: "{{ ipaadmin_password }}"
         ipa_host: "{{ ipa_server | default(omit) }}"
@@ -91,7 +124,7 @@
       when:
         - item != ansible_fqdn
         - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
       environment:
         http_proxy: ""
         https_proxy: ""
@@ -102,7 +135,7 @@
         ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
         kdestroy
       when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
   when: ipaadmin_password is defined
 
 - name: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
@@ -110,7 +143,7 @@
     - debug:
         msg: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
 
-    - name: "Create host objects {{ vhosts }}"
+    - name: "Create host objects {{ vhost_names }}"
       vars:
         ansible_python_interpreter: /bin/python3.6
       ipa_host:
@@ -119,11 +152,11 @@
         force: true
         random_password: yes
       when: item != ansible_fqdn
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
       environment:
         KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
 
-    - name: "Create CNAMES for vhosts {{ vhosts }}"
+    - name: "Create CNAMES for vhosts {{ vhost_names }}"
       vars:
         ansible_python_interpreter: /bin/python3.6
       ipa_dnsrecord:
@@ -134,7 +167,7 @@
       when:
         - item != ansible_fqdn
         - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
       environment:
         KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
 
@@ -173,7 +206,7 @@
             kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
             ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
             kdestroy
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
       when: item not in find_krbprincipalname.stdout_lines
       delegate_to: 127.0.0.1
   when: is_realmproxy
@@ -186,7 +219,7 @@
           ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
           kdestroy
         stdin: "{{ ipaadmin_password }}\n"
-      loop: "{{ vhosts }}"
+      loop: "{{ vhost_names }}"
       when: item not in find_krbprincipalname.stdout_lines
   when: ipaadmin_password is defined
 
@@ -213,7 +246,7 @@
             --key-owner apache
             --cert-owner apache
             --principal host/{{ ansible_fqdn }}
-            --dns {{ (vhosts + [ansible_fqdn]) | intersect(ipa_dns_domains) | unique | join(' --dns ') }}
+            --dns {{ (vhost_names + [ansible_fqdn]) | intersect(ipa_dns_domains) | unique | join(' --dns ') }}
             --wait
     creates: "{{ ssl_cert_file }}"
   environment:
@@ -230,22 +263,24 @@
 
 - name: Create document root for vhosts
   file:
-    path: "/var/www/html/{{ item }}"
+    path: "/var/www/{{ item }}"
     state: directory
-  loop: "{{ vhosts }}"
+    owner: apache
+    group: apache
+  loop: "{{ vhost_names }}"
 
 - name: Copy vhost configuration files
   template:
     src: vhost.conf
     dest: "/etc/httpd/conf.d/{{ item }}.conf"
-  loop: "{{ vhosts }}"
+  loop: "{{ vhost_names }}"
   notify: restart_httpd
 
 - name: "Create vhost include folders"
   file:
     path: "/etc/httpd/conf.d/{{ item }}.conf.inc.d"
     state: directory
-  loop: "{{ vhosts }}"
+  loop: "{{ vhost_names }}"
 
 - name: Find ssl.conf
   stat:

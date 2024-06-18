@@ -18,7 +18,7 @@
 
 - name: "nextcloud : Create nextcloud folder"
   stat:
-    path:  /var/www/html/{{ mail_cloud_fqdn }}/nextcloud
+    path: "{{ nextcloud_occ }}"
   register: stat_nextcloud
   changed_when: no
 
@@ -93,7 +93,7 @@
     - name: "nextcloud : Unpack software"
       unarchive:
         src: /tmp/latest-{{ nextcloud_release }}.zip
-        dest: /var/www/html/{{ mail_cloud_fqdn }}
+        dest: "{{ (nextcloud_folder | split('/'))[:-1] | join('/')}}"
         remote_src: yes
 
     - name: "nextcloud : Remove tmp file"
@@ -103,7 +103,7 @@
 
     - name: "nextcloud : chown apache"
       file:
-        name: /var/www/html/{{ mail_cloud_fqdn }}/nextcloud
+        name: "{{ nextcloud_folder }}"
         owner: apache
         group: apache
         recurse: yes
@@ -190,8 +190,8 @@
             --database-pass={{ roundcube_password }}
             --admin-user={{ nextcloud_admin_user }}
             --admin-pass={{ nextcloud_admin_password }}
-            --data-dir=/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/data
-    creates: /var/www/html/{{ mail_cloud_fqdn }}/nextcloud/config/config.php
+            --data-dir={{ nextcloud_folder }}/data
+    creates: "{{ nextcloud_folder }}/config/config.php"
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "nextcloud : config system"
@@ -209,18 +209,18 @@
   cron:
     name: nextcloud
     user: apache
-    job: "php -f /var/www/html/{{ mail_cloud_fqdn }}/nextcloud/cron.php"
+    job: "php -f {{ nextcloud_folder }}/cron.php"
     minute: "*/5"
 
 - name: "nextcloud : Update .htaccess"
   copy:
     src: nextcloud_htaccess
-    dest: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/.htaccess"
+    dest: "{{ nextcloud_folder }}/.htaccess"
 
 - name: "nextcloud : create symlink ocm-provider"
   file:
-    path: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/ocm-provider"
-    src: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/ocs-provider"
+    path: "{{ nextcloud_folder }}/ocm-provider"
+    src: "{{ nextcloud_folder }}/ocs-provider"
     state: link
 
 - name: "nextcloud : Get admin's display name"
@@ -253,7 +253,7 @@
 - name: "nextcloud : Find installed apps"
   find:
     recurse: no
-    paths: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud/apps"
+    paths: "{{ nextcloud_folder }}/apps"
     file_type: directory
   register: installed_apps
 

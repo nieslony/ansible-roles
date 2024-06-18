@@ -16,26 +16,29 @@
 - block:
   - name: Resize volumes
     lvol:
-        vg: "{{ vg_name }}"
+        vg: "{{ system_volume_group }}"
         lv: "{{ item.name }}"
         size: "{{ item.size }}"
         resizefs: yes
+    when: item.create or item.name in ansible_lvm.vgs[system_volume_group]
     loop: "{{ logical_volumes }}"
 
   - name: Create filesystems
     filesystem:
         fstype: xfs
-        dev: "/dev/{{ vg_name }}/{{ item.name }}"
+        dev: "/dev/{{ system_volume_group }}/{{ item.name }}"
+    when: item.create or item.name in ansible_lvm.vgs[system_volume_group]
     loop: "{{ logical_volumes }}"
 
   - name: Mount filesystems
     mount:
         path: "{{ item.mount_point }}"
-        src: "/dev/{{ vg_name }}/{{ item.name }}"
+        src: "/dev/{{ system_volume_group }}/{{ item.name }}"
         fstype: xfs
         state: mounted
+    when: item.create or item.name in ansible_lvm.vgs[system_volume_group]
     loop: "{{ logical_volumes }}"
-  when: ansible_lvm.vgs.system is defined
+  when: system_volume_group is defined
 
 - name: "Install packages {{ packages_common + packages_postfix + packages_cyrus_imapd }}"
   dnf:
