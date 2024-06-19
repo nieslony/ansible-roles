@@ -163,7 +163,7 @@ packages_nextcloud:
     - yum-utils
     - python3-jmespath
 
-nextcloud_release: 28
+nextcloud_release: 29
 nextcloud_folder: "/var/www/{{ mail_cloud_fqdn }}/nextcloud"
 nextcloud_occ: "{{ nextcloud_folder }}/occ"
 nextcloud_admin_user: nc-admin
