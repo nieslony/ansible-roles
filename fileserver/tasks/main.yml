@@ -14,6 +14,40 @@
     state: directory
   loop: "{{ exports }}"
 
+- block:
+  - name: "Create volumes"
+    lvol:
+        vg: "{{ system_volume_group }}"
+        lv: "{{ item.path[1:] | replace('/', '_') }}"
+        size: "{{ item.size }}"
+        shrink: false
+    loop:
+        "{{ exports }}"
+
+  - name: "Create filesystems"
+    filesystem:
+        fstype: xfs
+        dev: "/dev/{{ system_volume_group }}/{{ item.path[1:] | replace('/', '_') }}"
+    loop:
+        "{{ exports }}"
+
+  - name: "Mount filesystems"
+    mount:
+        path: "{{ item.path }}"
+        src: "/dev/{{ system_volume_group }}/{{ item.path[1:] | replace('/', '_') }}"
+        fstype: xfs
+        state: mounted
+    loop:
+        "{{ exports }}"
+  when: system_volume_group is defined
+
+- name: "Set permissions"
+  file:
+    path: "{{ item.path }}"
+    group: "{{ item.group | default(omit) }}"
+    mode: "{{ item.mode | default(2775) }}"
+  loop: "{{ exports }}"
+
 - name: "Create services on {{ ipa_server }}"
   ipa_service:
     name: "{{ item }}/{{ ansible_fqdn }}"
