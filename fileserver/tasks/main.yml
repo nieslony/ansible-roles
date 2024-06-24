@@ -98,6 +98,7 @@
     - nfs-server
     - smb
     - winbind
+    - firewalld
 
 - name: Open services in firewall
   firewalld:

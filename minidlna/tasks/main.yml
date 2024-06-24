@@ -1,3 +1,6 @@
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - block:
   - name: "Create volumes"
     lvol:
@@ -68,11 +71,14 @@
     line: "root_container=B"
     state: present
 
-- name: "Start minidlna"
+- name: "Start services"
   service:
-    name: minidlna
+    name: "{{ item }}"
     state: started
     enabled: yes
+  loop:
+    - firewalld
+    - minidlna
 
 - name: "Enable minidlna in firewall"
   firewalld:

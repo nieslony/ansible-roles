@@ -300,6 +300,15 @@
   when: stat_ssl_conf.stat.exists and stat_ssl_conf.stat.size > 0
   notify: restart_httpd
 
+- name: Enable and start services
+  service:
+    name: "{{item }}"
+    enabled: yes
+    state: started
+  with_items:
+    - httpd
+    - firewalld
+
 - name: Open http/https in firewall
   firewalld:
     service: "{{ item }}"
@@ -309,9 +318,3 @@
   with_items:
     - http
     - https
-
-- name: Enable and start httpd
-  service:
-    name: httpd
-    enabled: yes
-    state: started

@@ -180,6 +180,15 @@
   loop:
     - "{{ gerbera_port }}/tcp"
 
+- name: "Start services"
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - gerbera
+    - firewalld
+
 - name: Open services in firewall
   firewalld:
     service: "{{ item }}"
@@ -196,8 +205,3 @@
     persistent: true
   notify: restart_httpd
 
-- name: "Start gerbera"
-  service:
-    name: gerbera
-    enabled: yes
-    state: started
