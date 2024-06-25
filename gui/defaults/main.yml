@@ -65,6 +65,7 @@ gui_rpm_packages:
   - unrar
   - vlc
   - vulkan-loader
+  - xmlstarlet
 
 gui_extra_themes:
   - adwaita-cursor-theme
@@ -158,10 +159,13 @@ exclude_packages:
 remove_packages:
   - gnome-initial-setup
 
-file_bookmarks:
-  - name: "Music on Fileserver"
-    url: "file:///data/music"
-    icon: "folder-remote"
-  - name: "Videos on Fileserver"
-    url: "file:///data/videos"
-    icon: "folder-remote"
+automount_location: "{{ freeipa_automount_location | default('default') }}"
+automount_map: auto.data
+
+file_bookmarks: []
+#  - name: "Music on Fileserver"
+#    url: "file:///data/music"
+#    icon: "folder-remote"
+#  - name: "Videos on Fileserver"
+#    url: "file:///data/videos"
+#    icon: "folder-remote"
