@@ -4,7 +4,7 @@
 exports:
     - { path: /export/data, share: data, automount_key: data, size: 5G, group: root }
 
-automount_location: default
+automount_location: "{{ freeipa_automount_location | default('default') }}"
 automount_map: auto.data
 
 krb5_realm: "{{ ansible_domain | upper }}"
