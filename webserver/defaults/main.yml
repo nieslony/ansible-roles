@@ -6,6 +6,12 @@ lvm_volsize_gb: 0
 vhosts: "{{ [ansible_fqdn] }}"
 ok_as_delegate: yes
 
+install_whoami_app: yes
+whoami_packages:
+    - python3-flask
+    - python3-mod_wsgi
+whoami_folder: /var/www/whoami
+
 packages:
     - httpd
     - mod_auth_gssapi
@@ -15,4 +21,3 @@ packages:
 keytab: /etc/httpd/krb5.keytab
 ssl_key_file: "/etc/pki/tls/private/{{ ansible_fqdn }}.key"
 ssl_cert_file: "/etc/pki/tls/certs/{{ ansible_fqdn }}.crt"
-

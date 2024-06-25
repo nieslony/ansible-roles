@@ -300,6 +300,27 @@
   when: stat_ssl_conf.stat.exists and stat_ssl_conf.stat.size > 0
   notify: restart_httpd
 
+- block:
+    - name: "Install packages for whoami: {{ whoami_packages | join(', ') }}"
+      dnf:
+        name: "{{ whoami_packages }}"
+        state: latest
+
+    - name: "Copy WhoAmI app to {{ whoami_folder }}"
+      copy:
+        src: whoami/
+        dest: "{{ whoami_folder }}"
+      notify: restart_httpd
+
+    - name: "Add webapp to vhosts"
+      file:
+        src: "{{ whoami_folder }}/whoami.conf"
+        dest: "/etc/httpd/conf.d/{{ item }}.conf.inc.d/whoami.conf"
+        state: link
+      loop: "{{ vhosts }}"
+      notify: restart_httpd
+  when: install_whoami_app
+
 - name: Open http/https in firewall
   firewalld:
     service: "{{ item }}"
