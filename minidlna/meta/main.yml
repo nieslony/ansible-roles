@@ -51,12 +51,12 @@ dependencies:
   - role: fileserver
     vars:
       exports:
-        - path: /export/music
+        - path: "{{ music_folder }}"
           share: music
           automount_key: music
           size: 20G
           group: media-editors
-        - path: /export/videos
+        - path: "{{ videos_folder }}"
           share: videos
           automount_key: videos
           size: 5G

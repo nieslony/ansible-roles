@@ -1,2 +1,4 @@
 friendly_name: "{{ ansible_hostname }}"
 
+music_folder: /data/music
+videos_folder:  /data/videos
