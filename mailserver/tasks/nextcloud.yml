@@ -2,11 +2,16 @@
 # The current PHP memory limit is below the recommended value of 512MB.
 # https://nextcloud-mail.readthedocs.io/en/v0.18.0/admin/
 
+- name: "Find foreman repo list"
+  stat:
+    path: /etc/yum.repos.d/redhat.repo
+  register: stat_redhat_repo
+
 - name: "nextcloud : Add PHP remi repo"
   dnf:
     name: "{{ php_remi_repo }}"
     disable_gpg_check: yes
-  when: php_remi_repo != ""
+  when: php_remi_repo != "" and not stat_redhat_repo.stat.exists
 
 - name: "nextcloud : Install php remi {{ php_remi_release }}"
   command: "dnf -y module enable php:remi-{{ php_remi_release }}"

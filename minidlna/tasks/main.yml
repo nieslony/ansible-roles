@@ -1,50 +1,10 @@
-- block:
-  - name: "Create volumes"
-    lvol:
-        vg: "{{ system_volume_group }}"
-        lv: "{{ item.key }}"
-        size: "{{ item.value.size }}"
-        shrink: false
-    loop:
-        "{{ data_volumes | dict2items }}"
-
-  - name: "Create filesystems"
-    filesystem:
-        fstype: xfs
-        dev: "/dev/{{ system_volume_group }}/{{ item.key }}"
-    loop:
-        "{{ data_volumes | dict2items }}"
-
-  - name: "Mount filesystems"
-    mount:
-        path: "/data/{{ item.key }}"
-        src: "/dev/{{ system_volume_group }}/{{ item.key }}"
-        fstype: xfs
-        state: mounted
-    loop:
-        "{{ data_volumes | dict2items }}"
-  when: system_volume_group is defined
-
-- name: "Create media dirs on root filesystem"
-  file:
-    path: "/data/{{ item.key }}"
-    state: directory
-  loop:
-    "{{ data_volumes | dict2items }}"
-  when: system_volume_group is undefined
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
 
 - name: "Install minidlna"
   dnf:
     name: minidlna
     state: latest
-
-- name: "Set media permissions"
-  file:
-    path: "/data/{{ item.key }}"
-    group: "{{ item.value.group }}"
-    mode: 02775
-  loop:
-    "{{ data_volumes | dict2items }}"
 
 - name: "Unset media dir"
   lineinfile:
@@ -68,11 +28,24 @@
     line: "root_container=B"
     state: present
 
-- name: "Start minidlna"
+- name: "Create .directory files"
+  copy:
+    dest: "{{ item.path }}/.directory"
+    content: |
+        [Desktop Entry]
+        Icon={{ item.icon }}
+  loop:
+    - { path: "{{ music_folder }}", icon: folder-music }
+    - { path: "{{ videos_folder }}", icon: folder-video }
+
+- name: "Start services"
   service:
-    name: minidlna
+    name: "{{ item }}"
     state: started
     enabled: yes
+  loop:
+    - firewalld
+    - minidlna
 
 - name: "Enable minidlna in firewall"
   firewalld:

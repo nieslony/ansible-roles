@@ -167,11 +167,14 @@
     - "ServerKeychain /etc/pki/cups"
   notify: restart_cups
 
-- name: "Start cups"
+- name: "Start services"
   service:
-    name: cups
+    name: "{{ item }}"
     state: started
     enabled: yes
+  with_items:
+    - cups
+    - firewalld
 
 - name: "Open firewall"
   firewalld:

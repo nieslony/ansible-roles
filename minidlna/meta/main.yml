@@ -47,6 +47,17 @@ galaxy_info:
     # NOTE: A tag is limited to a single word comprised of alphanumeric characters.
     #       Maximum 20 tags per role.
 
-dependencies: []
-  # List your role dependencies here, one per line. Be sure to remove the '[]' above,
-  # if you add dependencies to this list.
+dependencies:
+  - role: fileserver
+    vars:
+      exports:
+        - path: "{{ music_folder }}"
+          share: music
+          automount_key: music
+          size: 20G
+          group: media-editors
+        - path: "{{ videos_folder }}"
+          share: videos
+          automount_key: videos
+          size: 5G
+          group: media-editors

@@ -1,6 +1,4 @@
-data_volumes:
-    music: { size: "20G", group: media-editors }
-    videos: { size: "5G", group: media-editors }
-
 friendly_name: "{{ ansible_hostname }}"
 
+music_folder: /data/music
+videos_folder:  /data/videos
