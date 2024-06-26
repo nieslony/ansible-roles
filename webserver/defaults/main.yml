@@ -3,7 +3,11 @@ lvm_volgroup: system
 lvm_volume: var_www
 lvm_volsize_gb: 0
 
-vhosts: "{{ [ansible_fqdn] }}"
+# list of string or dict. if size_gb is given, a LV will be created
+vhosts:
+    - "{{ ansible_fqdn }}"
+#    - { name: "{{ ansible_fqdn }}", size_gb: "10" }
+
 ok_as_delegate: yes
 
 packages:
