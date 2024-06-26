@@ -319,7 +319,11 @@
         state: link
       loop: "{{ vhosts }}"
       notify: restart_httpd
-  when: install_whoami_app
+  when: enable_whoami_app
+
+- block:
+
+  when: enable_infopipe
 
 - name: Open http/https in firewall
   firewalld:
