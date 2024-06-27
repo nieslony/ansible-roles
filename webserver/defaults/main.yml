@@ -10,7 +10,7 @@ vhosts:
 
 ok_as_delegate: yes
 
-enable_whoami_app: yes
+enable_whoami_app: no
 whoami_packages:
     - python3-flask
     - python3-mod_wsgi
@@ -19,7 +19,7 @@ whoami_folder: /var/www/whoami
 enable_infopipe: no
 infopipe_extra_attrs:
     - mail
-    - divenname
+    - givenname
     - sn
 
 packages:

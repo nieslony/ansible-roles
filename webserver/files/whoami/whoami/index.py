@@ -7,6 +7,6 @@ def index():
     sorted_env = sorted(flask.request.environ.items())
     return flask.render_template(
         "index.html",
-        env=flask.request.environ,
+        env=sorted_env,
         remote_user=flask.request.environ.get("REMOTE_USER")
         )

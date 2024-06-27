@@ -322,10 +322,77 @@
   when: enable_whoami_app
 
 - block:
+    - name: "Install  sssd-dbus"
+      dnf:
+        name:
+          - sssd-dbus
+          - mod_lookup_identity
+        state: latest
 
+    - name: "Read sssd.conf"
+      slurp:
+        path: /etc/sssd/sssd.conf
+      register: sssd_conf
+
+    - set_fact:
+        sssd_services: |-
+            {{
+                sssd_conf.content
+                    | b64decode
+                    | regex_findall('\nservices *= *[a-z, ]+')
+                    | first
+                    | split(' = ')
+                    | last
+                    | split(', ')
+                    | union(['ifp'])
+                    | join(', ')
+            }}
+
+    - name: "Set SSSD services {{ sssd_services }}"
+      ini_file:
+        path: /etc/sssd/sssd.conf
+        section: sssd
+        option: services
+        value: "{{ sssd_services }}"
+      notify: restart_sssd
+
+    - name: "Set ldap_extra_attrs: {{ infopipe_extra_attrs | join(', ') }}"
+      ini_file:
+        path: /etc/sssd/sssd.conf
+        section: "{{ item | regex_replace('[\\[\\]]', '') }}"
+        option: ldap_extra_attrs
+        value: "{{ infopipe_extra_attrs | join(', ') }}"
+      loop: "{{ sssd_conf.content | b64decode | regex_findall('\\[domain/[a-zA-Z0-9\\-.]+\\]') }}"
+      notify: restart_sssd
+
+    - name: "Configure section ifp in sssd.conf"
+      ini_file:
+        path: /etc/sssd/sssd.conf
+        section: ifp
+        option: "{{ item.option }}"
+        value: "{{ item.value }}"
+      loop:
+        - { option: allowed_uids, value: "apache, root" }
+        - { option: user_attributes, value: "+{{ infopipe_extra_attrs | join(', +') }}" }
+      notify: restart_sssd
+
+    - name: "Enable Apache module"
+      lineinfile:
+        path: /etc/httpd/conf.modules.d/55-lookup_identity.conf
+        regexp: '# *(LoadModule +lookup_identity_module +.*)'
+        line: '\1'
+        backrefs: yes
+      notify: restart_sssd
+
+    - name: "Allow httpd access to dbus"
+      seboolean:
+        name: httpd_dbus_sssd
+        state: on
+        persistent: true
+      notify: restart_sssd
   when: enable_infopipe
 
-  - name: Enable and start services
+- name: Enable and start services
   service:
     name: "{{item }}"
     enabled: yes
