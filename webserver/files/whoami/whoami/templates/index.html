@@ -5,15 +5,26 @@
     </head>
 
     <body>
+        {%- if env_dict.get("REMOTE_USER_FULLNAME") %}
+        <h1>Hello {{ env_dict.get("REMOTE_USER_FULLNAME") }}</h1>
+        {% else %}
         <h1>Who Am I</h1>
+        {% endif %}
 
-        You are logged in as {{ remote_user }}
+        <p>
+            You are logged in as {{ remote_user }}
+        </p>
+        {% if env_dict.get("REMOTE_USER_MAIL") %}
+        <p>
+            Your mail address is {{ env_dict.get("REMOTE_USER_MAIL") }}
+        </p>
+        {% endif %}
 
         <h2>Environment</h2>
         <table>
             <tr>
                 <th>Key</th>
-                <th>Value></th>
+                <th>Value</th>
             <tr>
             {% for key, value in env -%}
             <tr>

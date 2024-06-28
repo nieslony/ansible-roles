@@ -8,7 +8,7 @@ vhosts:
     - "{{ ansible_fqdn }}"
 #    - { name: "{{ ansible_fqdn }}", size_gb: "10" }
 
-ok_as_delegate: yes
+enable_constrained_delegation: no
 
 enable_whoami_app: no
 whoami_packages:

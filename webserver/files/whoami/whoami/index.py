@@ -8,5 +8,6 @@ def index():
     return flask.render_template(
         "index.html",
         env=sorted_env,
+        env_dict=flask.request.environ,
         remote_user=flask.request.environ.get("REMOTE_USER")
         )
