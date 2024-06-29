@@ -12,11 +12,11 @@
         {% endif %}
 
         <p>
-            You are logged in as {{ remote_user }}
+            You are logged in as <i>{{ remote_user }}</i>.
         </p>
         {% if env_dict.get("REMOTE_USER_MAIL") %}
         <p>
-            Your mail address is {{ env_dict.get("REMOTE_USER_MAIL") }}
+            Your mail address is <i>{{ env_dict.get("REMOTE_USER_MAIL") }}</i>.
         </p>
         {% endif %}
 
