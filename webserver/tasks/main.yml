@@ -2,7 +2,7 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: "Build vhost_names"
+- name: "Build vhost_names from {{ vhosts }}"
   set_fact:
     vhost_names: "{{ (vhost_names is defined) | ternary(vhost_names, []) + [ (item is string) | ternary(item, item.name) ] }}"
   loop: "{{ vhosts }}"
@@ -28,6 +28,12 @@
         state: mounted
   when: lvm_volsize_gb > 0 and system_volume_group is defined
 
+- name: Create document root for vhosts
+  file:
+    path: "/var/www/html/{{ item }}"
+    state: directory
+  loop: "{{ vhost_names }}"
+
 - name:  "Create logical volumes for vhosts"
   block:
     - name: "Create volumes for vhosts"
@@ -41,14 +47,14 @@
     - name: "Create filesystems for vhosts"
       filesystem:
         fstype: xfs
-        dev: "/dev/{{ system_volume_group }}/var_www_{{ item.name}}"
+        dev: "/dev/{{ system_volume_group }}/var_www_html_{{ item.name}}"
       when: item is mapping
       loop: "{{ vhosts }}"
 
     - name: "Mount file system for vhosts"
       mount:
-        path: "/var/www/{{ item.name }}"
-        src: "/dev/{{ system_volume_group }}/var_www_{{ item.name }}"
+        path: "/var/www/html/{{ item.name }}"
+        src: "/dev/{{ system_volume_group }}/var_www_html_{{ item.name }}"
         fstype: xfs
         state: mounted
       when: item is mapping
@@ -74,6 +80,14 @@
     shell: /sbin/nologin
     system: yes
 
+- name: Chown document root for vhosts
+  file:
+    path: "/var/www/html/{{ item }}"
+    state: directory
+    owner: apache
+    group: apache
+  loop: "{{ vhost_names }}"
+
 - name: Scan host objects of vhosts
   shell: |
     kinit -k
@@ -94,6 +108,9 @@
   when:
     - item.rc == 1
     - item.item != ansible_fqdn
+
+- debug:
+    var: add_managed
 
 - name: "Create CNAMES and host objects remote with admin password"
   block:
@@ -129,7 +146,7 @@
         http_proxy: ""
         https_proxy: ""
 
-    - name: "Add managedby {{ ansible_fqdn }}"
+    - name: "Add managedby {{ ansible_fqdn }} to {{ add_managed }}"
       shell: |
         echo "{{ ipaadmin_password }}" | kinit admin
         ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
@@ -207,7 +224,7 @@
             ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
             kdestroy
       loop: "{{ vhost_names }}"
-      when: item not in find_krbprincipalname.stdout_lines
+      when: ("HTTP/" + item) not in find_krbprincipalname.stdout_lines
       delegate_to: 127.0.0.1
   when: is_realmproxy
 
@@ -220,7 +237,7 @@
           kdestroy
         stdin: "{{ ipaadmin_password }}\n"
       loop: "{{ vhost_names }}"
-      when: item not in find_krbprincipalname.stdout_lines
+      when: ("HTTP/" + item) not in find_krbprincipalname.stdout_lines
   when: ipaadmin_password is defined
 
 - name: "Get keytab"
@@ -239,14 +256,20 @@
 
 - name: "Get SSL certificate for webserver"
   command:
-    cmd: >
+    cmd: >-
         ipa-getcert request
             --keyfile {{ ssl_key_file }}
             --certfile {{ ssl_cert_file }}
             --key-owner apache
             --cert-owner apache
-            --principal host/{{ ansible_fqdn }}
-            --dns {{ (vhost_names + [ansible_fqdn]) | intersect(ipa_dns_domains) | unique | join(' --dns ') }}
+            --principal HTTP/{{ ansible_fqdn }}
+            {%- for host in vhost_names -%}
+                {%- for dom in ipa_dns_domains -%}
+                    {%- if host.endswith("." + dom) %}
+                        --dns {{ host }}
+                    {%- endif -%}
+                {%- endfor -%}
+            {%- endfor %}
             --wait
     creates: "{{ ssl_cert_file }}"
   environment:
@@ -260,14 +283,6 @@
     src: default_vhost.conf
     dest: /etc/httpd/conf.d/default_vhost.conf
   notify: restart_httpd
-
-- name: Create document root for vhosts
-  file:
-    path: "/var/www/{{ item }}"
-    state: directory
-    owner: apache
-    group: apache
-  loop: "{{ vhost_names }}"
 
 - name: Copy vhost configuration files
   template:
@@ -345,6 +360,7 @@
                     | last
                     | split(', ')
                     | union(['ifp'])
+                    | sort
                     | join(', ')
             }}
 
@@ -389,7 +405,7 @@
         name: httpd_dbus_sssd
         state: on
         persistent: true
-      notify: restart_sssd
+      notify: restart_httpd
   when: enable_infopipe
 
 - name: Enable and start services
