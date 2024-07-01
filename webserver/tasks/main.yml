@@ -39,7 +39,7 @@
     - name: "Create volumes for vhosts"
       lvol:
         vg: "{{ system_volume_group }}"
-        lv: "var_www_{{ item.name }}"
+        lv: "var_www_html_{{ item.name }}"
         size: "{{ item.size_gb }}G"
       when: item is mapping
       loop: "{{ vhosts }}"
