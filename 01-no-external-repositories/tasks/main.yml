@@ -1,20 +1,20 @@
 # tasks file for no-external-repositories
 
-- name: Create backup folder
-  file:
-    path: /etc/yum.repos.d/backup
-    state: directory
+- block:
+  - name: Create backup folder
+    file:
+      path: /etc/yum.repos.d/backup
+      state: directory
 
-- name: Find repo files
-  shell: find /etc/yum.repos.d/ -maxdepth 1 -type f -not -name redhat.repo
-  register: found_repo_files
-  changed_when: False
+  - name: Find repo files
+    shell: find /etc/yum.repos.d/ -maxdepth 1 -type f -not -name redhat.repo
+    register: found_repo_files
+    changed_when: False
 
-- name: Move repos to backup folder
-  command: "mv {{ item }} /etc/yum.repos.d/backup"
-  loop: "{{ found_repo_files.stdout_lines }}"
-  when: >
-    skip_repo_backup is undefined and (
-        (repo_whitelist is undefined) or
-        (not item.split("/") | last in repo_whitelist)
-    )
+  - name: Move repos to backup folder
+    command: "mv {{ item }} /etc/yum.repos.d/backup"
+    loop: "{{ found_repo_files.stdout_lines }}"
+    when:
+      - skip_repo_backup is undefined
+      - (repo_whitelist is undefined) or (not item.split("/") | last in repo_whitelist)
+  when: foreman['organization'] is defined
