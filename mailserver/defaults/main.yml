@@ -10,7 +10,7 @@ logical_volumes:
   - { name: "var_spool_imap", create: yes, size: "5G", mount_point: /var/spool/imap }
   - { name: "var_lib_imap",   create: yes, size: "2G", mount_point: /var/lib/imap }
   - { name: "var_lib_mysql",  create: yes, size: "4G", mount_point: /var/lib/mysql }
-  - name: "var_www_{{ mail_cloud_fqdn}}_nextcloud_data"
+  - name: "var_www_html_{{ mail_cloud_fqdn}}_nextcloud_data"
     size: "10G"
     mount_point: "{{ nextcloud_folder }}/data"
     create: yes
@@ -164,7 +164,7 @@ packages_nextcloud:
     - python3-jmespath
 
 nextcloud_release: 29
-nextcloud_folder: "/var/www/{{ mail_cloud_fqdn }}/nextcloud"
+nextcloud_folder: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud"
 nextcloud_occ: "{{ nextcloud_folder }}/occ"
 nextcloud_admin_user: nc-admin
 nextcloud_admin_displayname: "Nextcloud Administrator"
