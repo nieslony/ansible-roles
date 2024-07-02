@@ -152,7 +152,7 @@
         ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
         kdestroy
       when: item != ansible_fqdn
-      loop: "{{ vhost_names }}"
+      loop: "{{ add_managed }}"
   when: ipaadmin_password is defined
 
 - name: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
