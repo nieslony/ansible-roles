@@ -86,6 +86,10 @@
     state: directory
     owner: apache
     group: apache
+    setype: _default
+    seuser: _default
+    serole: _default
+    mode: "2775"
   loop: "{{ vhost_names }}"
 
 - name: Scan host objects of vhosts
