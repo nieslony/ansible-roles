@@ -1,2 +1,7 @@
 ---
 # defaults file for fail2ban
+fail2ban_ignoreip: ""
+fail2ban_ignore_local_ip: yes
+fail2ban_services:
+  - sshd
+fail2ban_bantime: "15min"

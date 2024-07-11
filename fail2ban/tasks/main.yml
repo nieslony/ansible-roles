@@ -1,2 +1,32 @@
----
-# tasks file for fail2ban
+- name: "Install package fail2ban-all"
+  dnf:
+    name: fail2ban-all
+    state: latest
+
+- name: "Configure fail2bahn"
+  ini_file:
+    path: /etc/fail2ban/jail.local
+    section: DEFAULT
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: "{{ (item.value is string and item.value | length > 0) | ternary('present', 'absent') }}"
+  with_dict:
+    ignoreip: "{{ fail2ban_ignoreip + (fail2ban_ignore_local_ip | ternary(' 192.168.0.0/16 10.0.0.0/8 172.16.0.0/12', '')) }}"
+    bantime: "{{ fail2ban_bantime }}"
+  notify: restart_fail2ban
+
+- name: "Configure services"
+  ini_file:
+    path: /etc/fail2ban/jail.local
+    section: "{{ item }}"
+    option: enabled
+    value: "true"
+  when: item is string
+  with_items: "{{ fail2ban_services }}"
+  notify: restart_fail2ban
+
+- name: "Start fail2ban"
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes

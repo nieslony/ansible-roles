@@ -1,2 +1,7 @@
 ---
 # handlers file for fail2ban
+- name: Restart fail2ban
+  service:
+    name: fail2ban
+    state: restarted
+  listen: restart_fail2ban
