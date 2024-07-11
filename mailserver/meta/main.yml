@@ -48,6 +48,10 @@ galaxy_info:
     #       Maximum 20 tags per role.
 
 dependencies:
+    - role: fail2ban
+    - role: fail2ban
+      vars:
+        fail2ban_services: ['postfix', 'cyrus-imap']
     - role: webserver
       vars:
         vhosts:

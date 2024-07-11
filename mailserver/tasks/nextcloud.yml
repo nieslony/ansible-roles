@@ -32,6 +32,24 @@
     name: "{{ packages_nextcloud }}"
     state: latest
 
+- name: "nextcloud : setfcontext for {{ nextcloud_folder }}"
+  sefcontext:
+    target: "{{ nextcloud_folder }}(/.*)"
+    setype: httpd_sys_content_t
+
+- name: "nextcloud setfcontext for {{ nextcloud_folder}}'s subfolders"
+  sefcontext:
+    target: "{{ item }}"
+    setype: httpd_sys_rw_content_t
+  loop:
+    - '{{ nextcloud_folder }}/data(/.*)?'
+    - '{{ nextcloud_folder }}/config(/.*)?'
+    - '{{ nextcloud_folder }}/apps(/.*)?'
+    - '{{ nextcloud_folder }}/.htaccess'
+    - '{{ nextcloud_folder }}/.user.ini'
+    - '{{ nextcloud_folder }}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
+  notify: relabel_nextcloud
+
 - name: "nextcloud : Create nextcloud folder"
   stat:
     path: "{{ nextcloud_occ }}"
@@ -347,7 +365,20 @@
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:test-config s01"
 
+- name: "nextcloud : Install fail2ban filter"
+  copy:
+    src: nextcloud.conf
+    dest: /etc/fail2ban/filter.d
+  notify: restart_fail2ban
 
+- name: "nextclizud : Install nextcloud.local"
+  template:
+    src: nextcloud.local
+    dest: /etc/fail2ban/jail.d
+  notify: restart_fail2ban
 
-#   sudo -u apache ./occ config:system:set default_phone_region --value=AT
-
+- name: "postfix : copy nextcloud.te"
+  copy:
+    src: nextcloud.te
+    dest: /var/local/selinux-modules
+  notify: selinux_module_nextcloud

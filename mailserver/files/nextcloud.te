@@ -1,0 +1,12 @@
+module nextcloud 1.0;
+
+require {
+	class dir search;
+	class file { getattr read open };
+	type httpd_sys_rw_content_t;
+	type fail2ban_t;
+}
+
+#============= fail2ban_t ==============
+allow fail2ban_t httpd_sys_rw_content_t:dir search;
+allow fail2ban_t httpd_sys_rw_content_t:file { getattr read open };
