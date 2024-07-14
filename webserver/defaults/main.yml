@@ -9,10 +9,12 @@ vhosts:
 #    - { name: "{{ ansible_fqdn }}", size_gb: "10" }
 
 enable_constrained_delegation: no
+krb_ccache_dir: /var/www/client_ccache
 
 enable_whoami_app: no
 whoami_packages:
     - python3-flask
+    - python3-ldap3
     - python3-mod_wsgi
 whoami_folder: /var/www/whoami
 

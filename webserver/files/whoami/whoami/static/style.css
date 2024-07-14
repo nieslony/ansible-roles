@@ -1,0 +1,69 @@
+:root {
+    --highlight-color: #6688ee;
+    --background-color: #ddddee;
+}
+
+html {
+    font-family: sans-serif;
+    font-size: 11pt;
+}
+
+h1 {
+    font-size: 200%;
+    font-weight: bold;
+    color: var(--highlight-color)
+}
+
+h2 {
+    font-size: 150%;
+    font-weight: bold;
+    color: var(--highlight-color)
+}
+
+h3 {
+    font-size: 120%;
+    font-weight: bold;
+    color: var(--highlight-color)
+}
+
+th {
+    text-align: left;
+}
+
+dd {
+    font-weight: normal;
+}
+
+dl {
+    font-weight: bold;
+}
+
+input[type=submit] {
+    border-color: var(--highlight-color);
+    background-color: var(--background-color);
+}
+
+input[type=text] {
+    min-width: 80%;
+}
+
+label {
+    min-width: 100pt;;
+    max-width: 20%;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+    list-style-position: inside;
+}
+
+li {
+    margin:0;
+}
+
+.searchform {
+    display: block;
+}

@@ -331,6 +331,12 @@
         dest: "{{ whoami_folder }}"
       notify: restart_httpd
 
+    - name: "Install whoami.conf"
+      template:
+        src: whoami.conf
+        dest: "{{ whoami_folder }}"
+      notify: restart_httpd
+
     - name: "Add webapp to vhosts"
       file:
         src: "{{ whoami_folder }}/whoami.conf"
@@ -338,6 +344,12 @@
         state: link
       loop: "{{ vhosts }}"
       notify: restart_httpd
+
+    - name: "Allow httpd -> LDAP connections"
+      seboolean:
+        name: httpd_can_connect_ldap
+        state: true
+        persistent: true
   when: enable_whoami_app
 
 - block:
@@ -411,6 +423,22 @@
         persistent: true
       notify: restart_httpd
   when: enable_infopipe
+
+- block:
+  - name: "Set file context httpd_sys_rw_content_t for {{ krb_ccache_dir }}(/.*)?'"
+    sefcontext:
+      target: "{{ krb_ccache_dir }}(/.*)?'"
+      setype: httpd_sys_rw_content_t
+      state: present
+
+  - name: "Create client credential cache {{ krb_ccache_dir }}"
+    file:
+      path: "{{ krb_ccache_dir }}"
+      state: directory
+      owner: apache
+      mode: 0700
+      setype: httpd_sys_rw_content_t
+  when: enable_constrained_delegation
 
 - name: Enable and start services
   service:

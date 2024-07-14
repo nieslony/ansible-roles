@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+    <head>
+        <title>LDAP Search</title>
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    </head>
+
+    <body>
+        <h1>LDAP Search</h1>
+        <p><a href="{{ url_for('index.index') }}">Back to whoami</a></p>
+
+        {% if error %}
+        <h2>Error</h2>
+        {{ error }}
+        {% endif %}
+
+        <form method="post">
+            <div class="searchform>">
+                <label for="server_url">Server URL:</label>
+                <input id="server_url" type="text" name="server_url"  value="{{ server_url }}"/>
+                <br/>
+
+                <label for="base_dn">Base DN:</label>
+                <input id="base_dn" type="text" name="base_dn" value="{{ base_dn }}"/>
+                <br/>
+
+                <label for="search">Search:</label>
+                <input id="search" type="text" name="search" value="{{ search }}"/>
+                <br/>
+
+                <input type="submit" name="do_search" value="Search"/>
+            </div>
+        </form>
+
+        {% if result %}
+        <h2>Result</h2>
+        {% for entry in result %}
+        <h3>{{ entry.dn }}</h3>
+        <dl>
+            {% for key, value in entry["attributes"].items() -%}
+                <dt>{{ key }}</dt>
+                {% if value is iterable and value is not string -%}
+                <dd>
+                    <ul>
+                    {% for v in value -%}
+                        <li>{{ v }}</li>
+                    {% endfor -%}
+                    </ul>
+                </dd>
+                {% else -%}
+                <dd>{{ value }}</dd>
+                {% endif -%}
+
+            {% endfor -%}
+        </dl>
+        {% endfor -%}
+        {% endif -%}
+    </body>
+</html>

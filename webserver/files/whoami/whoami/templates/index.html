@@ -2,6 +2,7 @@
 <html>
     <head>
         <title>Who Am I</title>
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
     </head>
 
     <body>
@@ -18,6 +19,12 @@
         <p>
             Your mail address is <i>{{ env_dict.get("REMOTE_USER_MAIL") }}</i>.
         </p>
+        {% endif %}
+
+        {% if krb5ccname %}
+        <h2>Test Ticket Delegation</h2>
+        <p>Credential cache: <i>{{ krb5ccname }}</i></p>
+        <p><a href="{{ url_for('index.ldap_search') }}">LDAP Search</a></p>
         {% endif %}
 
         <h2>Environment</h2>
