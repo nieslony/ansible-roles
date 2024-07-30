@@ -1,8 +1,15 @@
-- name: "Add repo {{ arachnecdl_repo_url }}"
-  get_url:
-    url: "{{ arachnecdl_repo_url }}"
-    dest: /etc/yum.repos.d
-  when: arachnecdl_repo_url != ""
+- block:
+    - name: "Add repo {{ arachnecdl_repo_url }}"
+      get_url:
+        url: "{{ arachnecdl_repo_url }}"
+        dest: /etc/yum.repos.d
+      when: arachnecdl_repo_url != ""
+
+    - name: "Add arache copr repo {{arachnecdl_copr_repo}}"
+      command:
+        cmd: "dnf -y copr enable {{arachnecdl_copr_repo}}"
+      when: arachnecdl_copr_repo != ""
+  when: foreman['organization'] is not defined
 
 - name: "Install package"
   dnf:
