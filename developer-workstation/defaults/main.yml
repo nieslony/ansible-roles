@@ -19,6 +19,7 @@ rpm_devel_packages:
   - ant
   - apache-netbeans
   - bridge-utils
+  - cargo
   - cockpit-machines
   - cockpit-podman
   - java-11-openjdk-devel
@@ -50,6 +51,7 @@ rpm_devel_packages:
   - ruby-devel
   - rubygem-rexml
   - rubygems-devel
+  - rust-analyzer.x86_64
   - shyaml
   - squid
   - tito
