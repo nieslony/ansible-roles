@@ -23,7 +23,7 @@
       lineinfile:
         path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
         line: |
-            pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | join(', ') }}");
+            pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | map('regex_replace', '^\\*', '') | join(', ') }}");
         regex: |
             ^pref\("network.negotiate-auth.trusted-uris".*
       when: find_all_ipa.stat.exists
@@ -125,7 +125,7 @@
                     "BookmarkBarEnabled": true,
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
-                    "AuthServerAllowlist": trusted_uris | map('regex_replace', '^\\*', '') | map('regex_replace', '^([a-z])', '.\\1') | join(', '),
+                    "AuthServerAllowlist": trusted_uris | join(', '),
                     "ManagedBookmarks": managed_bookmarks
                 }, recursive=True)
             }}
