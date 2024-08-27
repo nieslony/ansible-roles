@@ -377,7 +377,7 @@
     dest: /etc/fail2ban/jail.d
   notify: restart_fail2ban
 
-- name: "postfix : copy nextcloud.te"
+- name: "nextcloud : copy nextcloud.te"
   copy:
     src: nextcloud.te
     dest: /var/local/selinux-modules
