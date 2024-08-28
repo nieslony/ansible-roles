@@ -5,7 +5,7 @@ enable_google_chrome: true
 
 install_chrome_repo: "{{ not foreman is defined }}"
 
-trusted_uris: ["{{ ansible_domain }}"]
+trusted_uris: ["*.{{ ansible_domain }}"]
 delegation_uris: []
 
 homepage: "https://www.google.com"
