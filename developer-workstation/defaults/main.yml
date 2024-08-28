@@ -53,7 +53,7 @@ rpm_devel_packages:
   - ruby-devel
   - rubygem-rexml
   - rubygems-devel
-  - rusr2rpm
+  - rust2rpm
   - rust-analyzer
   - rustup
   - shyaml
