@@ -31,6 +31,7 @@ rpm_devel_packages:
   - libvirt
   - libvirt-devel
   - maven
+  - perl-XML-XPath
   - podman
   - podman-remote
   - pylint
@@ -53,8 +54,8 @@ rpm_devel_packages:
   - ruby-devel
   - rubygem-rexml
   - rubygems-devel
-  - rust2rpm
   - rust-analyzer
+  - rust2rpm
   - rustup
   - shyaml
   - squid
@@ -63,7 +64,6 @@ rpm_devel_packages:
   - virt-install
   - virt-manager
   - virtio-win
-  - xpath
 
 rpm_devel_packages_centos: "{{ rpm_devel_extra_packages_centos + rpm_devel_packages }}"
 rpm_devel_packages_fedora: "{{ rpm_devel_extra_packages_fedora + rpm_devel_packages }}"
