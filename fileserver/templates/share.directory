@@ -1,0 +1,7 @@
+[Desktop Entry]
+{% if item.icon is defined %}
+Icon={{ item.icon }}
+{% endif %}
+{% if item.description is defined %}
+Comment={{ item.description }}
+{% endif %}

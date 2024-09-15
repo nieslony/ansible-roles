@@ -100,6 +100,12 @@
   register: set_sid
   changed_when: set_sid.stdout == ""
 
+- name: "Install preexec scripts"
+  copy:
+    src: create-personal-folder.sh
+    dest: /usr/local/bin
+    mode: 0775
+
 - name: "Install /etc/exports"
   template:
     src: exports
@@ -116,6 +122,22 @@
     state: present
   loop: "{{ exports }}"
   when: ipaadmin_password is defined
+
+- name: "Create .desktop files"
+  template:
+    src: share.directory
+    dest: "{{ item.path }}/.directory"
+  when: item.icon is defined or icon.description is defined
+  loop: "{{ exports }}"
+
+- name: "Create SMB preexec hint"
+  copy:
+    dest: "{{ item.path }}/.smb-preexec-hint"
+    content: |
+        # Connect to this share to invoke preexec script
+        //{{ ansible_fqdn }}/{{ item.share }}
+  when: item.is_personal | default(false)
+  loop: "{{ exports }}"
 
 - name: "Set selinux booleans"
   seboolean:

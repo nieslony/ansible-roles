@@ -1,8 +1,24 @@
 # optional values:
 #   - group
 #   - mode (default: 2775
+#   - is_personal (default: false)
+#   - description (default: empty, added as SMB comment and .desktop file)
+#   - icon (added to .desktop file)
 exports:
-    - { path: /export/data, share: data, automount_key: data, size: 5G, group: root }
+    - path: /export/data
+      share: data
+      automount_key: data
+      size: 5G
+      group: root
+    - path: /export/private
+      share: private
+      automount_key: private
+      description: "Private Data"
+      icon: view-private
+      size: 5G
+      group: root
+      is_personal: true
+
 
 automount_location: "{{ freeipa_automount_location | default('default') }}"
 automount_map: auto.data
@@ -14,3 +30,7 @@ packages:
     - python3-urllib-gssapi
     - samba
     - samba-winbind-clients
+
+personal_extra_opts:
+    private:
+        mode: "0700"
