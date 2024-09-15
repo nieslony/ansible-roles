@@ -3,6 +3,6 @@ autofs_options:
     browse_mode: "yes"
     timeout: "15"
     mount_nfs_default_protocol: "4"
-    mount_wait: "1"
+    mount_wait: "5"
 
 autofs_location: default
