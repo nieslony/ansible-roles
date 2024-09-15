@@ -266,7 +266,7 @@
 - name: Install bashrc.d scripts
   template:
     src: "patch_file_bookmarks.sh"
-    dest: /etc/skel/.bashrc.d
+    dest: /etc/profile.d
 
 - name: Install patch_file_bookmarks.desktop
   copy:

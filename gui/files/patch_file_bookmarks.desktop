@@ -2,4 +2,4 @@
 Type=Application
 Name=Patch user-places.xbel
 NoDisplay=true
-Exec=bash /etc/skel/.bashrc.d/patch_file_bookmarks.sh
+Exec=bash /etc/profile.d/patch_file_bookmarks.sh -f -s 5
