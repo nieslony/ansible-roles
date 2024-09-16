@@ -1,5 +1,7 @@
 #!/bin/bash
 
+CREATE_NC_FOLDERS="$HOME/.bashrc.d/create-nextcloud-folders.sh"
+
 gsettings set org.gnome.evolution-data-server autoconfig-directory /usr/local/etc/evolution
 
 autoconf_vars=$( ldapsearch -LLLQ uid=$USER mail displayName | awk -F ':\\s*' -v quote="'" '
@@ -30,4 +32,10 @@ gsettings set org.gnome.evolution-data-server autoconfig-variables "$autoconf_va
 
 if [ ! -e "~/.config/evolution" ]; then
         /usr/libexec/evolution-source-registry & sleep 10 ; killall evolution-source-registry
+fi
+
+if [ -e "$CREATE_NC_FOLDERS" ]; then
+        bash "$CREATE_NC_FOLDERS"
+else
+        echo "$CREATE_NC_FOLDERS does not exist. Folders already created."
 fi

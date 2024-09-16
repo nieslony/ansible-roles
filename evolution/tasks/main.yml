@@ -40,6 +40,11 @@
     - system-calendar.source
 #    - autoconf-ldap-contacts.source
 
+- name: Install create-nextcloud-folders.sh
+  template:
+    src: create-nextcloud-folders.sh
+    dest: /etc/skel/.bashrc.d
+
 - name: Install evolution-autoconf.sh
   copy:
     src: evolution-autoconf.sh
