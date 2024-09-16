@@ -85,7 +85,7 @@
     register: stat_chrome_repo
     changed_when: false
 
-  - name: Install Googlr Chrome Repo
+  - name: Install Google Chrome Repo
     dnf:
       name: https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
       state: present
@@ -125,7 +125,7 @@
                     "BookmarkBarEnabled": true,
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
-                    "AuthServerAllowlist": trusted_uris | join(', '),
+                    "AuthServerAllowlist": trusted_uris | map('regex_replace', '^\.', '*.')  | join(', '),
                     "ManagedBookmarks": managed_bookmarks
                 }, recursive=True)
             }}
