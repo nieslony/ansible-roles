@@ -8,8 +8,14 @@ vhosts:
     - "{{ ansible_fqdn }}"
 #    - { name: "{{ ansible_fqdn }}", size_gb: "10" }
 
-enable_constrained_delegation: no
+constrained_delegation_enabled: no
 krb_ccache_dir: /var/www/client_ccache
+constrained_delegation_targets: {}
+  # ipa-ldap-delegation-targets:
+  #   - "ldap/ipa01.linux.lab@LINUX.LAB"
+constrained_delegation_rule:
+# constrained_delegation_rule: webserver-delegation-rule
+
 
 enable_whoami_app: no
 whoami_packages:

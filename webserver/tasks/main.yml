@@ -1,4 +1,7 @@
 # tasks file for webserver
+- set_fact:
+    debug_defaults: yes
+
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
@@ -353,7 +356,7 @@
   when: enable_whoami_app
 
 - block:
-    - name: "Install  sssd-dbus"
+    - name: "Install sssd-dbus"
       dnf:
         name:
           - sssd-dbus
@@ -438,7 +441,58 @@
       owner: apache
       mode: 0700
       setype: httpd_sys_rw_content_t
-  when: enable_constrained_delegation
+
+  - block:
+      - name: "Create to delegation targets"
+        ipaservicedelegationtarget:
+          ipaadmin_password: "{{ ipaadmin_password }}"
+          name: "{{ item.key }}"
+        with_dict: "{{ constrained_delegation_targets }}"
+
+      - name: "Add members to delegation targets"
+        ipaservicedelegationtarget:
+          ipaadmin_password: "{{ ipaadmin_password }}"
+          name: "{{ item.key }}"
+          principal: "{{ item.value }}"
+          action: member
+        with_dict: "{{ constrained_delegation_targets }}"
+
+      - name: "Create delegation rule {{ constrained_delegation_rule }}"
+        ipaservicedelegationrule:
+          ipaadmin_password: "{{ ipaadmin_password }}"
+          name: "{{ constrained_delegation_rule }}"
+
+      - name: "Add targets to rule {{ constrained_delegation_rule }}"
+        ipaservicedelegationrule:
+          ipaadmin_password: "{{ ipaadmin_password }}"
+          name: "{{ constrained_delegation_rule }}"
+          target: "{{ item.key }}"
+          action: member
+        with_dict: "{{ constrained_delegation_targets }}"
+
+      - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ constrained_delegation_rule }}"
+        shell:
+          cmd: |
+            trap kdestroy EXIT
+            timeout 3s kinit || exit 2
+            if ipa servicedelegationrule-show webserver-delegation-rule --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
+                exit 1
+            else
+                 ipa servicedelegationrule-add-member {{ constrained_delegation_rule }} --principals=HTTP/{{ ansible_fqdn }} || exit 2
+            fi
+          stdin: "{{ ipaadmin_password }}"
+        changed_when: add_princible_result.rc == 0
+        failed_when: add_princible_result.rc > 1
+        register: add_princible_result
+
+      # - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ constrained_delegation_rule }}"
+      #   ipaservicedelegationrule:
+      #     ipaadmin_password: "{{ ipaadmin_password }}"
+      #     name: "{{ constrained_delegation_rule }}"
+      #     # principal: "HTTP/{{ ansible_fqdn }}"
+      #     action: member
+    when: ipaadmin_password is defined
+  when: constrained_delegation_enabled
 
 - name: Enable and start services
   service:
