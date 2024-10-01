@@ -13,7 +13,7 @@
       - cockpit-system
       - cockpit-ws
       - python3-urllib-gssapi
-      - "{{ (distribution.name != 'AlmaLinux') | ternary('subscription-manager-cockpit', omit) }}"
+#      - "{{ (distribution.name != 'AlmaLinux') | ternary('subscription-manager-cockpit', omit) }}"
     state: present
 
 - name: Get SSL certificate
