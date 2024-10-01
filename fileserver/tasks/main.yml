@@ -114,14 +114,20 @@
 
 - name: "Create automount keys"
   ipaautomountkey:
-    ipaadmin_password: "{{ ipaadmin_password }}"
+    ipaadmin_password: "{{  (ipaadmin_password is defined) | ternary(ipaadmin_password, omit) }}"
     location: "{{ automount_location }}"
     mapname: "{{ automount_map }}"
     key: "{{ item.automount_key }}"
     info: "-soft,rsize=65536,wsize=65536,timeo=50 {{ ansible_fqdn }}:{{ item.path }}"
     state: present
   loop: "{{ exports }}"
-  when: ipaadmin_password is defined
+  delegate_to: 127.0.0.1
+  environment:
+    KRB5_CLIENT_KTNAME: "{{ is_realmproxy | ternary('/etc/foreman-proxy/freeipa.keytab', omit) }}"
+    KRB5CCNAME: "{{ is_realmproxy | ternary('KEYRING:session:%{uid}', omit) }}"
+    http_proxy: ""
+    https_proxy: ""
+    HOME: /tmp
 
 - name: "Create .desktop files"
   template:
