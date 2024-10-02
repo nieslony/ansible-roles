@@ -36,7 +36,7 @@
     creates: "{{ cert_path }}"
 
 - name: Find connection
-  command: "nmcli con show '{{ connection_name }}'"
+  command: "nmcli con show '{{ net_802_1x_connection_name }}'"
   register: find_connection
   ignore_errors: yes
   changed_when: false
@@ -44,14 +44,14 @@
 - name: Create connection
   command: |
     nmcli connection add
-        con-name "{{ connection_name }}"
+        con-name "{{ net_802_1x_connection_name }}"
         type wifi
-        ssid "{{ connection_ssid }}"
+        ssid "{{ net_802_1x_connection_ssid }}"
   when: find_connection.rc ==  10
 
 - name: Get NM connection options
   shell: |
-    nmcli --show-secrets con show "{{ connection_name }}" \
+    nmcli --show-secrets con show "{{ net_802_1x_connection_name }}" \
         | awk -F ": +" '
             BEGIN { print "{"; }
             END { print "\"x\": \"\"}"; }
@@ -79,7 +79,7 @@
 
 - name: Change network connection
   command: |
-    nmcli connection modify "{{ connection_name }}"
+    nmcli connection modify "{{ net_802_1x_connection_name }}"
         {{ nmcli_mod_options | join(' ') }}
   when: nmcli_mod_options | length > 0
 
