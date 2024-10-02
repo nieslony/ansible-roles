@@ -54,3 +54,5 @@ dependencies:
       vars:
         fail2ban_services: ['apache-auth', 'apache-modsecurity']
 
+collections:
+  - freeipa.ansible_freeipa

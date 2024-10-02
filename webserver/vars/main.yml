@@ -1,0 +1,18 @@
+lvm_volume: var_www
+
+krb_ccache_dir: /var/www/client_ccache
+
+packages:
+    - httpd
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
+    - python3-urllib-gssapi
+ssl_key_file: "/etc/pki/tls/private/{{ ansible_fqdn }}.key"
+ssl_cert_file: "/etc/pki/tls/certs/{{ ansible_fqdn }}.crt"
+
+whoami_packages:
+    - python3-flask
+    - python3-ldap3
+    - python3-mod_wsgi
+whoami_folder: /var/www/whoami
