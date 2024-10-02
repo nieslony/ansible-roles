@@ -16,17 +16,24 @@
   lineinfile:
     path: "/etc/minidlna.conf"
     insertafter: ".*media_dir="
-    line: "media_dir={{ item.type }},/data/{{ item.dir }}"
+    line: "media_dir={{ item.type }},{{ item.dir }}"
   with_items:
-   - { type: "A", dir: "music" }
-   - { type: "V", dir: "videos" }
+   - { type: "A", dir: "{{ minidlna_music_folder }}" }
+   - { type: "V", dir: "{{ minidlna_videos_folder }}" }
 
 - name: "Set root container"
   lineinfile:
     path: "/etc/minidlna.conf"
-    regexp: "#?root_container=.*"
+    regexp: "#? *root_container=.*"
     line: "root_container=B"
     state: present
+
+- name: "Set friendly name"
+  lineinfile:
+    path: "/etc/minidlna.conf"
+    regexp: "#? *friendly_name=.*"
+    line: "friendly_name={{ minidlna_friendly_name }}"
+  when: minidlna_friendly_name != ""
 
 - name: "Create .directory files"
   copy:
@@ -35,8 +42,8 @@
         [Desktop Entry]
         Icon={{ item.icon }}
   loop:
-    - { path: "{{ music_folder }}", icon: folder-music }
-    - { path: "{{ videos_folder }}", icon: folder-video }
+    - { path: "{{ minidlna_music_folder }}", icon: folder-music }
+    - { path: "{{ minidlna_videos_folder }}", icon: folder-video }
 
 - name: "Start services"
   service:

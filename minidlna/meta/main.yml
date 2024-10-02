@@ -50,14 +50,14 @@ galaxy_info:
 dependencies:
   - role: fileserver
     vars:
-      exports:
-        - path: "{{ music_folder }}"
+      fileserver_exports:
+        - path: "{{ minidlna_music_folder }}"
           share: music
           automount_key: music
           size: 20G
           group: media-editors
           description: "Music"
-        - path: "{{ videos_folder }}"
+        - path: "{{ minidlna_videos_folder }}"
           share: videos
           automount_key: videos
           size: 5G

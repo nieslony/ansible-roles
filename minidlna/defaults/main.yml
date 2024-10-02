@@ -1,4 +1,4 @@
-friendly_name: "{{ ansible_hostname }}"
+minidlna_friendly_name:
 
-music_folder: /data/music
-videos_folder:  /data/videos
+minidlna_music_folder: /data/music
+minidlna_videos_folder:  /data/videos
