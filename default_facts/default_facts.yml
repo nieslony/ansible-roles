@@ -65,6 +65,19 @@
 - set_fact:
     is_realmproxy: "{{ stat_freeipa_keytab.stat is defined and stat_freeipa_keytab.stat.exists }}"
 
+- set_fact:
+    env_ipa_on_host:
+      KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+      KRB5CCNAME: "KEYRING:session:%{uid}"
+      https_proxy: ""
+      http_proxy: ""
+    env_ipa_on_server:
+      KRB5_CLIENT_KTNAME: "{{ is_realmproxy | ternary('/etc/foreman-proxy/freeipa.keytab', omit) }}"
+      KRB5CCNAME: "{{ is_realmproxy | ternary('KEYRING:session:%{uid}', omit) }}"
+      http_proxy: ""
+      https_proxy: ""
+      HOME: /tmp
+
 - name: "Find ipa domains"
   shell:
     cmd: |
@@ -81,6 +94,24 @@
   set_fact:
     ipa_dns_domains: "{{ ipa_domains_ret.stdout_lines }}"
 
+- name: "Read /etc/krb5.conf"
+  command: >
+        awk -F ' *= *'
+            '
+            BEGIN { libdefaults=0; }
+            /\[libdefaults\]/ { libdefaults=1; next; }
+            /\[.*\]/ { libdefaults=0; next; }
+            libdefaults==1 && /default_realm/ { printf $2; }
+            '
+            /etc/krb5.conf
+
+  changed_when: no
+  register: read_krb5_conf
+
+- name: "Set krb5_realm={{ read_krb5_conf.stdout }}"
+  set_fact:
+    krb5_realm: "{{ read_krb5_conf.stdout }}"
+
 - name: "Exported variables"
   debug:
     var: "{{ item }}"
@@ -95,6 +126,7 @@
     - organization
     - is_realmproxy
     - ipa_dns_domains
+    - krb5_realm
     - realm_keytab
     - system_volume_group
   when: debug_defaults is defined
