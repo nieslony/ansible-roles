@@ -12,7 +12,7 @@
   file:
     path: "{{ item.path }}"
     state: directory
-  loop: "{{ exports }}"
+  loop: "{{ fileserver_exports }}"
 
 - block:
   - name: "Create volumes"
@@ -22,14 +22,14 @@
         size: "{{ item.size }}"
         shrink: false
     loop:
-        "{{ exports }}"
+        "{{ fileserver_exports }}"
 
   - name: "Create filesystems"
     filesystem:
         fstype: xfs
         dev: "/dev/{{ system_volume_group }}/{{ item.path[1:] | replace('/', '_') }}"
     loop:
-        "{{ exports }}"
+        "{{ fileserver_exports }}"
 
   - name: "Mount filesystems"
     mount:
@@ -38,7 +38,7 @@
         fstype: xfs
         state: mounted
     loop:
-        "{{ exports }}"
+        "{{ fileserver_exports }}"
   when: system_volume_group is defined
 
 - name: "Set permissions"
@@ -46,7 +46,7 @@
     path: "{{ item.path }}"
     group: "{{ item.group | default(omit) }}"
     mode: "{{ item.mode | default(2775) }}"
-  loop: "{{ exports }}"
+  loop: "{{ fileserver_exports }}"
 
 - name: "Create services on {{ ipa_server }}"
   ipa_service:
@@ -114,27 +114,23 @@
 
 - name: "Create automount keys"
   ipaautomountkey:
-    ipaadmin_password: "{{  (ipaadmin_password is defined) | ternary(ipaadmin_password, omit) }}"
+    ipaadmin_password: "{{ (ipaadmin_password is defined) | ternary(ipaadmin_password, omit) }}"
     location: "{{ automount_location }}"
     mapname: "{{ automount_map }}"
     key: "{{ item.automount_key }}"
     info: "-soft,rsize=65536,wsize=65536,timeo=50 {{ ansible_fqdn }}:{{ item.path }}"
     state: present
-  loop: "{{ exports }}"
-  delegate_to: 127.0.0.1
-  environment:
-    KRB5_CLIENT_KTNAME: "{{ is_realmproxy | ternary('/etc/foreman-proxy/freeipa.keytab', omit) }}"
-    KRB5CCNAME: "{{ is_realmproxy | ternary('KEYRING:session:%{uid}', omit) }}"
-    http_proxy: ""
-    https_proxy: ""
-    HOME: /tmp
+  loop: "{{ fileserver_exports }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
 - name: "Create .desktop files"
   template:
     src: share.directory
     dest: "{{ item.path }}/.directory"
   when: item.icon is defined or icon.description is defined
-  loop: "{{ exports }}"
+  loop: "{{ fileserver_exports }}"
 
 - name: "Create SMB preexec hint"
   copy:
@@ -143,7 +139,7 @@
         # Connect to this share to invoke preexec script
         //{{ ansible_fqdn }}/{{ item.share }}
   when: item.is_personal | default(false)
-  loop: "{{ exports }}"
+  loop: "{{ fileserver_exports }}"
 
 - name: "Set selinux booleans"
   seboolean:
