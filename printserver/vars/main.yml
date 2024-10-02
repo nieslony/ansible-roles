@@ -1,0 +1,38 @@
+
+packages:
+    - cups
+    - gutenprint-cups
+    - hplip
+    - python3-urllib-gssapi
+listen: 0.0.0.0:631
+
+cupsd_options:
+    - key: Listen
+      value: "{{ listen }}"
+      find: '[a-z0-9.\-]+:[0-9]+'
+    - key: Browsing
+      value: "On"
+    - key: DefaultPolicy
+      value: 'kerberos'
+    - key: DefaultAuthType
+      value: 'Negotiate'
+    - key: DefaultEncryption
+      value: 'required'
+    - key: ServerName
+      value: "{{ ansible_fqdn }}"
+    - key: ServerAlias
+      value: "{{ ansible_fqdn }}"
+
+certs_folder: /etc/pki/cups
+ssl_cert: "{{ certs_folder }}/{{ ansible_fqdn }}.crt"
+ssl_key: "{{ certs_folder }}/{{ ansible_fqdn }}.key"
+
+locations:
+    - name: "/"
+      allow: all
+    - name: "/admin"
+      allow: all
+    - name: "/admin/conf"
+      allow: all
+    - name: "/admin/log"
+      allow: all
