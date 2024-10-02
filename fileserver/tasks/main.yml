@@ -114,7 +114,7 @@
 
 - name: "Create automount keys"
   ipaautomountkey:
-    ipaadmin_password: "{{ (ipaadmin_password is defined) | ternary(ipaadmin_password, omit) }}"
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     location: "{{ automount_location }}"
     mapname: "{{ automount_map }}"
     key: "{{ item.automount_key }}"
