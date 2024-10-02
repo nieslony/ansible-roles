@@ -27,26 +27,23 @@
     state: directory
 
 - name: Create service
-  ipa_service:
+  ipaservice:
     name: "HTTP/{{ ansible_fqdn }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    https_proxy: ""
-    http_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
 
-- name: "Get keytab {{ keytab }}"
+- name: "Get keytab {{ httpd_keytab }}"
   shell:
     cmd: >
         kinit -k &&
-        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }} &&
+        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ httpd_keytab }} &&
         kdestroy
-    creates: "{{ keytab }}"
+    creates: "{{ httpd_keytab }}"
 
 - name: Symlink keytab
   file:
     state: link
     dest: /etc/cockpit/krb5.keytab
-    src: /etc/httpd/krb5.keytab
+    src: "{{ httpd_keytab }}"
 
 - name: Start cockpit
   service:
@@ -59,3 +56,4 @@
     service: cockpit
     permanent: yes
     state: enabled
+    immediate: yes
