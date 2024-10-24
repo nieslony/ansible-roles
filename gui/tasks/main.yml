@@ -46,12 +46,35 @@
     and
     (ansible_lvm.vgs.system.free_g|float / ansible_lvm.vgs.system.size_g|float > 0.1)
 
-- name: Enable repos
-  command: "subscription-manager repos --enable {{ item }}"
-  with_items: "{{ enabled_centos8_repos }}"
-  when:
-    - enabled_centos8_repos is defined
-    - foreman['content_view'] == "Centos8_Stream_Extended"
+- name: "Enable RpmFusion"
+  yum_repository:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    metalink: "{{ item.metalink | default(omit) }}"
+    baseurl: "{{ item.baseurl | default(omit) }}"
+    gpgkey: "{{ item.gpgkey }}"
+  with_items:
+    - name: "rpmfusion-free"
+      description: "RPM Fusion for Fedora $releasever - Free"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-free-updates"
+      description: "RPM Fusion for Fedora $releasever - Free - Updates"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-updates-released-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-free-tainted"
+      description: "RPM Fusion for Fedora $releasever - Tainted"
+      baseurl: "https://mirrors.netix.net/rpmfusion/free/fedora/tainted/40/x86_64/"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-nonfree"
+      description: "RPM Fusion for Fedora $releasever - Nonfree"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-$releasever&arch=$basearch"#
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
+    - name: "rpmfusion-nonfree-updates"
+      description: "RPM Fusion for Fedora $releasever - Nonfree - Updates"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-updates-released-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
+  when: not foreman['content_view'] is defined
 
 - name: Disable external repositories
   include_role:
@@ -258,7 +281,7 @@
                 -%}
             {%- endfor -%}
         {%- endfor -%}
-        {{ (file_bookmarks + ns.bookmarks) | sort(attribute='name') }}
+        {{ (gui_file_bookmarks + ns.bookmarks) | sort(attribute='name') }}
 
 - debug:
     var: file_bookmarks

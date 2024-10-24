@@ -1,5 +1,8 @@
 ---
 # tasks file for cockpit
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: Install packages
   package:
     name:

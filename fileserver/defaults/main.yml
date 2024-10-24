@@ -19,6 +19,3 @@ fileserver_exports:
       group: root
       is_personal: true
       personal_folder_mode: "0700"
-
-automount_location: "{{ freeipa_automount_location | default('default') }}"
-automount_map: auto.data

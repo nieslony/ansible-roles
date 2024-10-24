@@ -13,10 +13,10 @@
 
 - name: "Configure automount from IPA"
   command:
-    cmd: "ipa-client-automount --location={{ autofs_location }} --unattended"
+    cmd: "ipa-client-automount --location={{ automount_location }} --unattended"
   when:
-    - autofs_location is defined
-    - autofs_location | length > 0
+    - automount_location is defined
+    - automount_location | length > 0
     - sssd_automount_location == ""
 
 - name: "autofs: Configure autofs.conf"

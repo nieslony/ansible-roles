@@ -112,6 +112,11 @@
   set_fact:
     krb5_realm: "{{ read_krb5_conf.stdout }}"
 
+- name: "Set automount variables"
+  set_fact:
+    automount_location: "{{ freeipa_automount_location | default('default') }}"
+    automount_map: auto.data
+
 - name: "Exported variables"
   debug:
     var: "{{ item }}"
@@ -129,4 +134,5 @@
     - krb5_realm
     - realm_keytab
     - system_volume_group
+    - automount_location
   when: debug_defaults is defined
