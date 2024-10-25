@@ -41,7 +41,7 @@
       ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ httpd_keytab }} || exit 1
       kdestroy
     creates: "{{ httpd_keytab }}"
-    environment: "{{ env_ipa_on_host }}"
+  environment: "{{ env_ipa_on_host }}"
 
 - name: "Symlink keytab {{ httpd_keytab }} -> /etc/cockpit/krb5.keytab"
   file:
