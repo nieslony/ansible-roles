@@ -29,32 +29,33 @@
     path: /etc/httpd
     state: directory
 
-- name: Create service
+- name: "Create service HTTP/{{ ansible_fqdn }}"
   ipaservice:
     name: "HTTP/{{ ansible_fqdn }}"
   environment: "{{ env_ipa_on_host }}"
 
 - name: "Get keytab {{ httpd_keytab }}"
   shell:
-    cmd: >
-        kinit -k &&
-        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ httpd_keytab }} &&
-        kdestroy
+    cmd: |
+      kinit -k || exit 1
+      ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ httpd_keytab }} || exit 1
+      kdestroy
     creates: "{{ httpd_keytab }}"
+    environment: "{{ env_ipa_on_host }}"
 
-- name: Symlink keytab
+- name: "Symlink keytab {{ httpd_keytab }} -> /etc/cockpit/krb5.keytab"
   file:
     state: link
     dest: /etc/cockpit/krb5.keytab
     src: "{{ httpd_keytab }}"
 
-- name: Start cockpit
+- name: "Start cockpit"
   service:
     name: cockpit.socket
     enabled: yes
     state: started
 
-- name: Open cockpit firewalld
+- name: "Open cockpit firewalld"
   firewalld:
     service: cockpit
     permanent: yes
