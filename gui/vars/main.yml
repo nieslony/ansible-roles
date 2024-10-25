@@ -56,7 +56,6 @@ gui_rpm_packages:
   - libdvdcss
   - nautilus-dropbox
   - plasma-nm-fortisslvpn
-  - thunderbird
   - unrar
   - vlc
   - vulkan-loader
