@@ -8,25 +8,28 @@
   changed_when: false
 
 - block:
+  - debug:
+      msg: "Setting LV sizes for VG size {{ vg_system_size|float }} GB"
+
   - name: Tiny VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_small }}"
-    when: vg_system_size|float <= 30
+    when: vg_system_size|float < 30.0
 
   - name: Mid size VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_mid }}"
-    when: vg_system_size|float > 30.0 and vg_system_size|float <= 100.0
+    when: vg_system_size|float >= 30.0 and vg_system_size|float < 100.0
 
   - name: Large VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_large }}"
-    when: vg_system_size|float > 100.0 and vg_system_size|float <= 250.0
+    when: vg_system_size|float >= 100.0 and vg_system_size|float < 250.0
 
   - name: Huge VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_huge }}"
-    when: vg_system_size|float > 250.0
+    when: vg_system_size|float >= 250.0
 
   - name: Resize volumes
     lvol:
