@@ -55,8 +55,6 @@ gui_rpm_packages:
   - lame
   - libdvdcss
   - nautilus-dropbox
-  - nextcloud-client-dolphin
-  - nextcloud-client-nautilus
   - plasma-nm-fortisslvpn
   - thunderbird
   - unrar
@@ -134,7 +132,7 @@ gui_extra_themes:
   - We10X-icon-theme
 
 gui_rpm_packages_centos: "{{ gui_rpm_extra_packages_centos + gui_rpm_packages }}"
-gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages + gui_extra_themes }}"
+gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages }}"
 
 commercial_packages:
   - google-chrome-stable
