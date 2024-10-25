@@ -250,7 +250,7 @@
     - ".local/share"
     - ".bashrc.d"
 
-- name: "Find automount maps"
+- name: "Find automount maps on {{ ldap_servers | first}}"
   community.general.ldap_search:
     dn: "cn={{ automount_location }},cn=automount,{{ ldap_base_dn }}"
     server_uri: "ldap://{{ ldap_servers | first}}/"
@@ -261,7 +261,7 @@
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
 
-- name: "Find mounts"
+- name: "Find mounts on {{ ldap_servers | first}}"
   community.general.ldap_search:
     dn: "automountmapname={{ item.automountInformation }},cn={{ automount_location }},cn=automount,{{ ldap_base_dn }}"
     server_uri: "ldap://{{ ldap_servers | first}}/"
