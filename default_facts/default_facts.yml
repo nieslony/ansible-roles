@@ -4,7 +4,16 @@
   changed_when: no
 
 - name: "DNS lookup _ldap._tcp.{{ ansible_domain }}/SRV"
-  shell: "host -t srv _ldap._tcp.{{ ansible_domain }} | awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'"
+  shell: |
+    for i in $(
+        host -t srv _ldap._tcp.{{ ansible_domain }} |
+            awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'
+        );
+    do
+        if ping -c1 -t1 $i > /dev/null
+            then echo $i
+        fi
+    done
   register: ldap_record
   changed_when: no
 
@@ -16,7 +25,9 @@
         tail -1 |
         awk '{ print $NF; }'
     ); do
-      host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+        if ping -c1 -t1 $ip > /dev/null
+            then host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+        fi
     done
   register: ipa_server_record
   changed_when: no
