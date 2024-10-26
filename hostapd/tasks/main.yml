@@ -43,32 +43,33 @@
         unmanaged-devices=interface-name:wl*
   notify: restart_networkmanager
 
-- name: "Configure bridge {{ bridge_name }}"
+- name: "Configure bridge {{ hostapd_bridge_name }}"
   nmcli:
     type: bridge
-    conn_name: "{{ bridge_name }}"
-    ifname: "{{ bridge_name }}"
+    conn_name: "{{ hostapd_bridge_name }}"
+    ifname: "{{ hostapd_bridge_name }}"
     state: present
     autoconnect: yes
     stp: no
   notify: restart_networkmanager
 
-- name: "Add NIC {{ bridge_slave_if }} to bridge"
+- name: "Add NIC {{ hostapd_bridge_slave_if }} to bridge"
   nmcli:
     type: bridge-slave
-    conn_name: "{{ bridge_name }}-{{ bridge_slave_if }}"
-    ifname: "{{ bridge_slave_if }}"
+    slave_type: bridge
+    conn_name: "{{ hostapd_bridge_name }}-{{ hostapd_bridge_slave_if }}"
+    ifname: "{{ hostapd_bridge_slave_if }}"
     state: present
-    master: "{{ bridge_name }}"
+    master: "{{ hostapd_bridge_name }}"
     autoconnect: yes
-  when: bridge_slave_if.startswith("eth") or bridge_slave_if.startswith("en")
+  when: hostapd_bridge_slave_if.startswith("eth") or hostapd_bridge_slave_if.startswith("en")
   notify: restart_networkmanager
 
 - name: "Flush handlers"
   meta: flush_handlers
 
 - name: "Enable bridge"
-  command: "nmcli con up {{ bridge_name }}-{{ bridge_slave_if }}"
+  command: "nmcli con up {{ hostapd_bridge_name }}-{{ hostapd_bridge_slave_if }}"
   changed_when: no
 
 - name: "Install packages"

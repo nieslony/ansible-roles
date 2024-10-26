@@ -1,12 +1,12 @@
 ---
 # defaults file for hostapd
-bridge_name: bridge0
-bridge_slave_if: "{{ ansible_interfaces | select('search', 'eth.*|en.*') | first }}"
-ssid: "testing"
-channel: 48
-wpa_password: changeme
-country_code: AT
+hostapd_bridge_name: bridge0
+hostapd_bridge_slave_if: "{{ ansible_interfaces | select('search', 'eth.*|en.*') | first }}"
+hostapd_ssid: "testing"
+hostapd_channel: 48
+hostapd_wpa_password: changeme
+hostapd_country_code: AT
 
-radius_server:
-radius_port: 1812
-radius_sharedsecret: changeme
+hostapd_radius_server:
+hostapd_radius_port: 1812
+hostapd_radius_sharedsecret: changeme
