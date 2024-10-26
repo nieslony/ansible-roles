@@ -1,5 +1,8 @@
 ---
 # tasks file for developer-workstation
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: Creeate storage for libvirt
   block:
     - name: Create LVs
@@ -42,25 +45,24 @@
     - ansible_lvm.vgs.system is defined
     - ansible_lvm.vgs.system.size_g|int > 200
 
-- name: "Install CentOS devel packages: {{ rpm_devel_packages_centos | join(', ') }}"
+- name: "Install CentOS devel packages: {{ packages_centos | sort | join(', ') }}"
   dnf:
-    name: "{{ rpm_devel_packages_centos }}"
+    name: "{{ packages_centos }}"
     state: present
     nobest: true
   when: ansible_distribution == "CentOS"
 
-- name: "Install Fedora devel packages: {{ rpm_devel_packages_fedora | join(', ') }}"
+- name: "Install Fedora devel packages: {{ packages_fedora | sort | join(', ') }}"
   dnf:
-    name: "{{ rpm_devel_packages_fedora }}"
+    name: "{{ packages_fedora }}"
     state: present
     nobest: true
   when: ansible_distribution == "Fedora"
 
 - name: Create services
-  ipa_service:
+  ipaservice:
     name: "{{ item }}/{{ ansible_fqdn }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+  environment: "{{ env_ipa_on_host }}"
   loop:
     - qemu
     - libvirt

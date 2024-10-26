@@ -1,18 +1,21 @@
 ---
 # defaults file for developer-workstation
-rpm_devel_extra_packages_centos:
+devws_exclude_packages: []
+devws_extra_packages: []
+
+devws_extra_packages_centos:
     - "@development"
     - "@rpm-development-tools"
     - "@virtualization-host-environment"
     - postgresql-server
 
-rpm_devel_extra_packages_fedora:
+devws_extra_packages_fedora:
   - "@developer-workstation-environment"
   - "postgresql-server"
   - "@virtualization"
   - rubygem-ruby-libvirt
 
-rpm_devel_packages:
+devws_packages:
   - "@container-management"
   - ansible
   - ansible-freeipa
@@ -26,6 +29,7 @@ rpm_devel_packages:
   - cockpit-podman
   - java-11-openjdk-devel
   - java-17-openjdk-devel
+  - java-21-openjdk-devel
   - java-latest-openjdk-devel
   - libguestfs
   - libvirt
@@ -64,24 +68,3 @@ rpm_devel_packages:
   - virt-install
   - virt-manager
   - virtio-win
-
-rpm_devel_packages_centos: "{{ rpm_devel_extra_packages_centos + rpm_devel_packages }}"
-rpm_devel_packages_fedora: "{{ rpm_devel_extra_packages_fedora + rpm_devel_packages }}"
-
-squid_conf:
-#  - "logformat readable %%'{'%%F %%T}}tl %%>a %%Ss/%%03>Hs %%<st %%rm %%ru %%[un %%Sh/%%<a %%mt"
-#  - "access_log /var/log/squid/access.log readable"
-  - "minimum_object_size     0 bytes"
-  - "maximum_object_size     900 MB"
-  - "maximum_object_size_in_memory 5 MB"
-  - "cache_mem 100 MB"
-  - "refresh_pattern -i /cgi-bin/  0  0%      0"
-  - "refresh_pattern       repomd\\.xml$      15    20%     720  override-expire override-lastmod ignore-no-store"
-  - "refresh_pattern \\.ks$            0    0%      0"
-  - "refresh_pattern .             1440    20%     10080 override-expire ignore-no-store"
-  - "cache allow all"
-  - "cache_dir ufs /var/spool/squid 12000 16 256"
-
-logical_volumes_devel:
-  - { name: "var_spool_squid", size: "15G",  mount_point: /var/spool/squid }
-  - { name: "var_lib_libvirt", size: "100G", mount_point: /var/lib/libvirt }
