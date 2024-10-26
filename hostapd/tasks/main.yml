@@ -69,7 +69,7 @@
   meta: flush_handlers
 
 - name: "Enable bridge"
-  command: "nmcli con up {{ hostapd_bridge_name }}-{{ hostapd_bridge_slave_if }}"
+  command: "nmcli con up {{ hostapd_bridge_name }}"
   changed_when: no
 
 - name: "Install packages"

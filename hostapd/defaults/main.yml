@@ -3,7 +3,7 @@
 hostapd_bridge_name: bridge0
 hostapd_bridge_slave_if: "{{ ansible_interfaces | select('search', 'eth.*|en.*') | first }}"
 hostapd_ssid: "testing"
-hostapd_channel: 48
+hostapd_channel: 1
 hostapd_wpa_password: changeme
 hostapd_country_code: AT
 
