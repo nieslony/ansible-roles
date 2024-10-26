@@ -1,16 +1,14 @@
 # defaults file for firefox
 
-enable_firefox: true
-enable_google_chrome: true
+webbrowser_enable_firefox: true
+webbrowser_enable_google_chrome: true
 
-install_chrome_repo: "{{ not foreman is defined }}"
+webbrowser_trusted_uris: ["*.{{ ansible_domain }}"]
+webbrowser_delegation_uris: []
 
-trusted_uris: ["*.{{ ansible_domain }}"]
-delegation_uris: []
+webbrowser_homepage: "https://www.google.com"
 
-homepage: "https://www.google.com"
-
-managed_bookmarks: []
+webbrowser_managed_bookmarks: []
     # - name: "Nextcloud"
     #   url: "http://cloud.test.lab"
     # - name: "Printserver"
