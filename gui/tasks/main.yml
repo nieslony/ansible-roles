@@ -110,6 +110,15 @@
     skip_broken: true
   when: ansible_distribution == "Fedora"
 
+- name: "Check diskspace on /"
+  shell: "df / --output=avail --block-size=G | tr -d ' G' | tail -1"
+  register: free_root_fs
+  changed_when: no
+
+- name: "diskspace on /"
+  debug:
+    var: free_root_fs.stdout
+
 - name: "Install Fedora extra packages: {{ gui_extra_themes | sort | join(', ') }}"
   dnf:
     name: "{{ gui_rpm_packages_fedora }}"
@@ -119,7 +128,7 @@
     skip_broken: true
   when:
     - ansible_distribution == "Fedora"
-    - vg_system_size|float >= 100.0
+    - free_root_fs.stdout | int > 10
 
 - name: Disable external repositories
   include_role:
@@ -130,16 +139,6 @@
     name: "{{ remove_packages }}"
     state: absent
     disable_excludes: yes
-
-- name: "Install commercial packages {{ commercial_packages | sort | join(', ') }}"
-  package:
-    name: "{{ commercial_packages }}"
-    state: present
-    disable_gpg_check: true
-
-- name: Disable external repositories
-  include_role:
-    name: 01-no-external-repositories
 
 - name: Install kwallet
   dnf:
