@@ -74,3 +74,7 @@ The following ansible collections are required:
  - community.mysql
 
  - freeipa.ansible_freeipa
+
+Add the collections with:
+
+    ansible-galaxy collection install --collections-path /usr/share/ansible/collections/ansible_collections <collection_name>
