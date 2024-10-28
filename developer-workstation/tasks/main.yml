@@ -111,6 +111,13 @@
   loop: "{{ squid_conf }}"
   notify: restart_squid
 
+- name: Allow squid from FW zone libvirt
+  firewalld:
+    zone: libvirt
+    servive: squid
+    immediate: true
+    state: enabled
+
 - name: Start and enable squid
   service:
     name: squid
