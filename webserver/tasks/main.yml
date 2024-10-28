@@ -475,7 +475,7 @@
           cmd: |
             trap kdestroy EXIT
             timeout 3s kinit || exit 2
-            if ipa servicedelegationrule-show webserver-delegation-rule --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
+            if ipa servicedelegationrule-show {{ constrained_delegation_rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
                 exit 1
             else
                  ipa servicedelegationrule-add-member {{ constrained_delegation_rule }} --principals=HTTP/{{ ansible_fqdn }} || exit 2
