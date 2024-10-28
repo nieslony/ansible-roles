@@ -60,5 +60,12 @@ dependencies:
           - "{{ ansible_fqdn }}"
         lvm_volsize_gb: 10
         enable_constrained_delegation: yes
+
+        constrained_delegation_enabled: yes
+        constrained_delegation_targets:
+            mail-imap-target:
+                - "imap/{{ ansible_fqdn }}"
+        constrained_delegation_rule: mail-delegation-rule
+
   # List your role dependencies here, one per line. Be sure to remove the '[]' above,
   # if you add dependencies to this list.
