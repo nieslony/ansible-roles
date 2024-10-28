@@ -141,20 +141,20 @@
   when: cupsd_conf_content_new != (cuspd_conf_content.content | b64decode)
   notify: restart_cups
 
-- name: "Find {{ admin_group }} group in SystemGroup"
+- name: "Find {{ printserver_admin_group }} group in SystemGroup"
   replace:
     path: /etc/cups/cups-files.conf
-    regexp: "^SystemGroup .*{{ admin_group }}.*"
+    regexp: "^SystemGroup .*{{ printserver_admin_group }}.*"
   check_mode: yes
   changed_when: no
   register: admin_group_found
 
-- name: "Add {{ admin_group }} group to SystemGroup"
+- name: "Add {{ printserver_admin_group  }} group to SystemGroup"
   lineinfile:
     path: /etc/cups/cups-files.conf
     regexp: "^(SystemGroup .*)"
     backrefs: yes
-    line: "\\1 {{ admin_group }}"
+    line: "\\1 {{ printserver_admin_group  }}"
   when: admin_group_found.msg | length == 0
 
 - name: "Don't create self signed cert"

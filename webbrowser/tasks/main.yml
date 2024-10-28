@@ -5,7 +5,7 @@
 - name: Add toplevel name to managed bookmarks
   set_fact:
     managed_bookmarks: |
-        {{ managed_bookmarks + [{ "toplevel_name": organization }] }}
+        {{ webbrowser_managed_bookmarks + [{ "toplevel_name": organization }] }}
 
 - block:
     - name: Install firefox
@@ -23,7 +23,7 @@
       lineinfile:
         path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
         line: |
-            pref("network.negotiate-auth.trusted-uris", "{{ trusted_uris | map('regex_replace', '^\\*', '') | join(', ') }}");
+            pref("network.negotiate-auth.trusted-uris", "{{ webbrowser_trusted_uris | map('regex_replace', '^\\*', '') | join(', ') }}");
         regex: |
             ^pref\("network.negotiate-auth.trusted-uris".*
       when: find_all_ipa.stat.exists
@@ -32,7 +32,7 @@
       lineinfile:
         path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
         line: |
-            pref("network.negotiate-auth.delegation-uris", "{{ delegation_uris | join(', ') }}");
+            pref("network.negotiate-auth.delegation-uris", "{{ webbrowser_delegation_uris | join(', ') }}");
         regex: |
             ^pref\("network.negotiate-auth.delegation-uris".*
       when: find_all_ipa.stat.exists
@@ -56,7 +56,7 @@
                 "policies": {
                     "ShowHomeButton": true,
                     "Homepage": {
-                        "URL": homepage,
+                        "URL": webbrowser_homepage,
                         "StartPage": "homepage"
                     },
                     "DisplayBookmarksToolbar": true,
@@ -76,7 +76,7 @@
       copy:
         dest: /usr/lib64/firefox/distribution/policies.json
         content: "{{ firefox_policies | to_nice_json }}"
-  when: enable_firefox
+  when: webbrowser_enable_firefox
 
 - block:
   - name: Find google-chrome.repo
@@ -121,11 +121,11 @@
       chrome_policies: |
             {{ managed_policies_json.content | b64decode | from_json | combine({
                     "ShowHomeButton": true,
-                    "HomepageLocation": homepage,
+                    "HomepageLocation": webbrowser_homepage,
                     "BookmarkBarEnabled": true,
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
-                    "AuthServerAllowlist": trusted_uris | map('regex_replace', '^\.', '*.')  | join(', '),
+                    "AuthServerAllowlist": webbrowser_trusted_uris | map('regex_replace', '^\.', '*.')  | join(', '),
                     "ManagedBookmarks": managed_bookmarks
                 }, recursive=True)
             }}
@@ -134,4 +134,4 @@
     copy:
       dest: /etc/opt/chrome/policies/managed/managed_policies.json
       content: "{{ chrome_policies | to_nice_json }}"
-  when: enable_google_chrome
+  when: webbrowser_enable_google_chrome

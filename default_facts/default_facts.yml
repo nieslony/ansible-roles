@@ -4,7 +4,16 @@
   changed_when: no
 
 - name: "DNS lookup _ldap._tcp.{{ ansible_domain }}/SRV"
-  shell: "host -t srv _ldap._tcp.{{ ansible_domain }} | awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'"
+  shell: |
+    for i in $(
+        host -t srv _ldap._tcp.{{ ansible_domain }} |
+            awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'
+        );
+    do
+        if ping -c1 -t1 $i > /dev/null
+            then echo $i
+        fi
+    done
   register: ldap_record
   changed_when: no
 
@@ -16,7 +25,9 @@
         tail -1 |
         awk '{ print $NF; }'
     ); do
-      host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+        if ping -c1 -t1 $ip > /dev/null
+            then host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+        fi
     done
   register: ipa_server_record
   changed_when: no
@@ -65,6 +76,19 @@
 - set_fact:
     is_realmproxy: "{{ stat_freeipa_keytab.stat is defined and stat_freeipa_keytab.stat.exists }}"
 
+- set_fact:
+    env_ipa_on_host:
+      KRB5_CLIENT_KTNAME: /etc/krb5.keytab
+      KRB5CCNAME: "KEYRING:session:%{uid}"
+      https_proxy: ""
+      http_proxy: ""
+    env_ipa_on_server:
+      KRB5_CLIENT_KTNAME: "{{ is_realmproxy | ternary('/etc/foreman-proxy/freeipa.keytab', omit) }}"
+      KRB5CCNAME: "{{ is_realmproxy | ternary('KEYRING:session:%{uid}', omit) }}"
+      http_proxy: ""
+      https_proxy: ""
+      HOME: /tmp
+
 - name: "Find ipa domains"
   shell:
     cmd: |
@@ -81,6 +105,29 @@
   set_fact:
     ipa_dns_domains: "{{ ipa_domains_ret.stdout_lines }}"
 
+- name: "Read /etc/krb5.conf"
+  command: >
+        awk -F ' *= *'
+            '
+            BEGIN { libdefaults=0; }
+            /\[libdefaults\]/ { libdefaults=1; next; }
+            /\[.*\]/ { libdefaults=0; next; }
+            libdefaults==1 && /default_realm/ { printf $2; }
+            '
+            /etc/krb5.conf
+
+  changed_when: no
+  register: read_krb5_conf
+
+- name: "Set krb5_realm={{ read_krb5_conf.stdout }}"
+  set_fact:
+    krb5_realm: "{{ read_krb5_conf.stdout }}"
+
+- name: "Set automount variables"
+  set_fact:
+    automount_location: "{{ freeipa_automount_location | default('default') }}"
+    automount_map: auto.data
+
 - name: "Exported variables"
   debug:
     var: "{{ item }}"
@@ -95,6 +142,8 @@
     - organization
     - is_realmproxy
     - ipa_dns_domains
+    - krb5_realm
     - realm_keytab
     - system_volume_group
+    - automount_location
   when: debug_defaults is defined

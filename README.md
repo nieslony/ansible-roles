@@ -58,3 +58,23 @@ domain. The can be applied in _The Foreman_ or in a
 
 - [zzz-finished](zzz-finished/README.md) the very last step in a foreman based
   desktop installation
+
+## Dependencies
+
+The following ansible collections are required:
+
+ - ansible.posix
+
+ - ansible.utils
+
+ - community.crypto
+
+ - community.general
+
+ - community.mysql
+
+ - freeipa.ansible_freeipa
+
+Add the collections with:
+
+    ansible-galaxy collection install --collections-path /usr/share/ansible/collections/ansible_collections <collection_name>

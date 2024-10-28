@@ -1,0 +1,5 @@
+
+cert_folder: "/etc/pki/networkmanager"
+cert_private_key_password_file: "{{ cert_folder }}/secret"
+cert_private_key_path: "/etc/pki/networkmanager/{{ ansible_fqdn }}.key"
+cert_path: "/etc/pki/networkmanager/{{ ansible_fqdn }}.crt"

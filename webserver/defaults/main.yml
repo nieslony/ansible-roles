@@ -1,41 +1,23 @@
 # defaults file for webserver
-lvm_volgroup: system
-lvm_volume: var_www
-lvm_volsize_gb: 0
+
+# if > 0 then create LV var_www
+webserver_lvm_volsize_gb: 0
 
 # list of string or dict. if size_gb is given, a LV will be created
-vhosts:
+webserver_vhosts:
     - "{{ ansible_fqdn }}"
 #    - { name: "{{ ansible_fqdn }}", size_gb: "10" }
 
-constrained_delegation_enabled: no
-krb_ccache_dir: /var/www/client_ccache
-constrained_delegation_targets: {}
-  # ipa-ldap-delegation-targets:
-  #   - "ldap/ipa01.linux.lab@LINUX.LAB"
-constrained_delegation_rule:
-# constrained_delegation_rule: webserver-delegation-rule
+webserver_constrained_delegation_enabled: no
+webserver_constrained_delegation_targets:
+  ipa-ldap-delegation-targets:
+     - "ldap/{{ ipa_server }}@{{ krb5_realm }}"
+webserver_constrained_delegation_rule: "{{ ansible_hostname }}-delegation-rule"
 
+webserver_whoami_app_enabled: no
 
-enable_whoami_app: no
-whoami_packages:
-    - python3-flask
-    - python3-ldap3
-    - python3-mod_wsgi
-whoami_folder: /var/www/whoami
-
-enable_infopipe: no
-infopipe_extra_attrs:
+webserver_infopipe_enabled: no
+webserver_infopipe_extra_attrs:
     - mail
     - givenname
     - sn
-
-packages:
-    - httpd
-    - mod_auth_gssapi
-    - mod_session
-    - mod_ssl
-    - python3-urllib-gssapi
-keytab: /etc/httpd/krb5.keytab
-ssl_key_file: "/etc/pki/tls/private/{{ ansible_fqdn }}.key"
-ssl_cert_file: "/etc/pki/tls/certs/{{ ansible_fqdn }}.crt"

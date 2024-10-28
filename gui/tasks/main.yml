@@ -8,25 +8,28 @@
   changed_when: false
 
 - block:
+  - debug:
+      msg: "Setting LV sizes for VG size {{ vg_system_size|float }} GB"
+
   - name: Tiny VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_small }}"
-    when: vg_system_size|float <= 30
+    when: vg_system_size|float < 30.0
 
   - name: Mid size VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_mid }}"
-    when: vg_system_size|float > 30.0 and vg_system_size|float <= 100.0
+    when: vg_system_size|float >= 30.0 and vg_system_size|float < 100.0
 
   - name: Large VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_large }}"
-    when: vg_system_size|float > 100.0 and vg_system_size|float <= 250.0
+    when: vg_system_size|float >= 100.0 and vg_system_size|float < 250.0
 
   - name: Huge VG system
     set_fact:
         logical_volumes: "{{ logical_volumes_huge }}"
-    when: vg_system_size|float > 250.0
+    when: vg_system_size|float >= 250.0
 
   - name: Resize volumes
     lvol:
@@ -46,12 +49,35 @@
     and
     (ansible_lvm.vgs.system.free_g|float / ansible_lvm.vgs.system.size_g|float > 0.1)
 
-- name: Enable repos
-  command: "subscription-manager repos --enable {{ item }}"
-  with_items: "{{ enabled_centos8_repos }}"
-  when:
-    - enabled_centos8_repos is defined
-    - foreman['content_view'] == "Centos8_Stream_Extended"
+- name: "Enable RpmFusion"
+  yum_repository:
+    name: "{{ item.name }}"
+    description: "{{ item.description }}"
+    metalink: "{{ item.metalink | default(omit) }}"
+    baseurl: "{{ item.baseurl | default(omit) }}"
+    gpgkey: "{{ item.gpgkey }}"
+  with_items:
+    - name: "rpmfusion-free"
+      description: "RPM Fusion for Fedora $releasever - Free"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-free-updates"
+      description: "RPM Fusion for Fedora $releasever - Free - Updates"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-updates-released-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-free-tainted"
+      description: "RPM Fusion for Fedora $releasever - Tainted"
+      baseurl: "https://mirrors.netix.net/rpmfusion/free/fedora/tainted/40/x86_64/"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
+    - name: "rpmfusion-nonfree"
+      description: "RPM Fusion for Fedora $releasever - Nonfree"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-$releasever&arch=$basearch"#
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
+    - name: "rpmfusion-nonfree-updates"
+      description: "RPM Fusion for Fedora $releasever - Nonfree - Updates"
+      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-updates-released-$releasever&arch=$basearch"
+      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
+  when: not foreman['content_view'] is defined
 
 - name: Disable external repositories
   include_role:
@@ -84,6 +110,26 @@
     skip_broken: true
   when: ansible_distribution == "Fedora"
 
+- name: "Check diskspace on /"
+  shell: "df / --output=avail --block-size=G | tr -d ' G' | tail -1"
+  register: free_root_fs
+  changed_when: no
+
+- name: "diskspace on /"
+  debug:
+    var: free_root_fs.stdout
+
+- name: "Install Fedora extra packages: {{ gui_extra_themes | sort | join(', ') }}"
+  dnf:
+    name: "{{ gui_rpm_packages_fedora }}"
+    exclude: "{{ exclude_packages }}"
+    state: present
+    nobest: true
+    skip_broken: true
+  when:
+    - ansible_distribution == "Fedora"
+    - free_root_fs.stdout | int > 10
+
 - name: Disable external repositories
   include_role:
     name: 01-no-external-repositories
@@ -93,16 +139,6 @@
     name: "{{ remove_packages }}"
     state: absent
     disable_excludes: yes
-
-- name: "Install commercial packages {{ commercial_packages | sort | join(', ') }}"
-  package:
-    name: "{{ commercial_packages }}"
-    state: present
-    disable_gpg_check: true
-
-- name: Disable external repositories
-  include_role:
-    name: 01-no-external-repositories
 
 - name: Install kwallet
   dnf:
@@ -216,7 +252,7 @@
     - ".local/share"
     - ".bashrc.d"
 
-- name: "Find automount maps"
+- name: "Find automount maps on {{ ldap_servers | first}}"
   community.general.ldap_search:
     dn: "cn={{ automount_location }},cn=automount,{{ ldap_base_dn }}"
     server_uri: "ldap://{{ ldap_servers | first}}/"
@@ -227,7 +263,7 @@
   environment:
     KRB5_CLIENT_KTNAME: /etc/krb5.keytab
 
-- name: "Find mounts"
+- name: "Find mounts on {{ ldap_servers | first}}"
   community.general.ldap_search:
     dn: "automountmapname={{ item.automountInformation }},cn={{ automount_location }},cn=automount,{{ ldap_base_dn }}"
     server_uri: "ldap://{{ ldap_servers | first}}/"
@@ -258,7 +294,7 @@
                 -%}
             {%- endfor -%}
         {%- endfor -%}
-        {{ (file_bookmarks + ns.bookmarks) | sort(attribute='name') }}
+        {{ (gui_file_bookmarks + ns.bookmarks) | sort(attribute='name') }}
 
 - debug:
     var: file_bookmarks

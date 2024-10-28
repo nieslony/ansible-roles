@@ -5,18 +5,18 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: "Build vhost_names from {{ vhosts }}"
+- name: "Build vhost_names from {{ webserver_vhosts }}"
   set_fact:
     vhost_names: "{{ (vhost_names is defined) | ternary(vhost_names, []) + [ (item is string) | ternary(item, item.name) ] }}"
-  loop: "{{ vhosts }}"
+  loop: "{{ webserver_vhosts }}"
 
 - name: "Create logical volume for /var/www"
   block:
-    - name: "Create volume {{ lvm_volume }} with size {{ lvm_volsize_gb }}GB"
+    - name: "Create volume {{ lvm_volume }} with size {{ webserver_lvm_volsize_gb }}GB"
       lvol:
         vg: "{{ system_volume_group }}"
         lv: "{{ lvm_volume }}"
-        size: "{{ lvm_volsize_gb }}G"
+        size: "{{ webserver_lvm_volsize_gb }}G"
 
     - name: Create filesystem
       filesystem:
@@ -29,7 +29,7 @@
         src: "/dev/{{ system_volume_group }}/{{ lvm_volume }}"
         fstype: xfs
         state: mounted
-  when: lvm_volsize_gb > 0 and system_volume_group is defined
+  when: webserver_lvm_volsize_gb > 0 and system_volume_group is defined
 
 - name: Create document root for vhosts
   file:
@@ -45,14 +45,14 @@
         lv: "var_www_html_{{ item.name }}"
         size: "{{ item.size_gb }}G"
       when: item is mapping
-      loop: "{{ vhosts }}"
+      loop: "{{ webserver_vhosts }}"
 
     - name: "Create filesystems for vhosts"
       filesystem:
         fstype: xfs
         dev: "/dev/{{ system_volume_group }}/var_www_html_{{ item.name}}"
       when: item is mapping
-      loop: "{{ vhosts }}"
+      loop: "{{ webserver_vhosts }}"
 
     - name: "Mount file system for vhosts"
       mount:
@@ -61,7 +61,7 @@
         fstype: xfs
         state: mounted
       when: item is mapping
-      loop: "{{ vhosts }}"
+      loop: "{{ webserver_vhosts }}"
   when: system_volume_group is defined
 
 - name: "Install packages: {{ packages | join(', ') }}"
@@ -345,7 +345,7 @@
         src: "{{ whoami_folder }}/whoami.conf"
         dest: "/etc/httpd/conf.d/{{ item }}.conf.inc.d/whoami.conf"
         state: link
-      loop: "{{ vhosts }}"
+      loop: "{{ webserver_vhosts }}"
       notify: restart_httpd
 
     - name: "Allow httpd -> LDAP connections"
@@ -353,7 +353,7 @@
         name: httpd_can_connect_ldap
         state: true
         persistent: true
-  when: enable_whoami_app
+  when: webserver_whoami_app_enabled
 
 - block:
     - name: "Install sssd-dbus"
@@ -391,12 +391,12 @@
         value: "{{ sssd_services }}"
       notify: restart_sssd
 
-    - name: "Set ldap_extra_attrs: {{ infopipe_extra_attrs | join(', ') }}"
+    - name: "Set ldap_extra_attrs: {{ webserver_infopipe_extra_attrs | join(', ') }}"
       ini_file:
         path: /etc/sssd/sssd.conf
         section: "{{ item | regex_replace('[\\[\\]]', '') }}"
         option: ldap_extra_attrs
-        value: "{{ infopipe_extra_attrs | join(', ') }}"
+        value: "{{ webserver_infopipe_extra_attrs | join(', ') }}"
       loop: "{{ sssd_conf.content | b64decode | regex_findall('\\[domain/[a-zA-Z0-9\\-.]+\\]') }}"
       notify: restart_sssd
 
@@ -408,7 +408,7 @@
         value: "{{ item.value }}"
       loop:
         - { option: allowed_uids, value: "apache, root" }
-        - { option: user_attributes, value: "+{{ infopipe_extra_attrs | join(', +') }}" }
+        - { option: user_attributes, value: "+{{ webserver_infopipe_extra_attrs | join(', +') }}" }
       notify: restart_sssd
 
     - name: "Enable Apache module"
@@ -425,7 +425,7 @@
         state: on
         persistent: true
       notify: restart_httpd
-  when: enable_infopipe
+  when: webserver_infopipe_enabled
 
 - block:
   - name: "Set file context httpd_sys_rw_content_t for {{ krb_ccache_dir }}(/.*)?'"
@@ -442,61 +442,74 @@
       mode: 0700
       setype: httpd_sys_rw_content_t
 
-  - block:
-      - name: "Create to delegation targets"
-        ipaservicedelegationtarget:
-          ipaadmin_password: "{{ ipaadmin_password }}"
-          name: "{{ item.key }}"
-        with_dict: "{{ constrained_delegation_targets }}"
+  - name: "Create to delegation targets"
+    ipaservicedelegationtarget:
+        ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+        name: "{{ item.key }}"
+    with_dict: "{{ webserver_constrained_delegation_targets }}"
+    delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+    become: no
+    environment: "{{ env_ipa_on_server }}"
 
-      - name: "Add members to delegation targets"
-        ipaservicedelegationtarget:
-          ipaadmin_password: "{{ ipaadmin_password }}"
-          name: "{{ item.key }}"
-          principal: "{{ item.value }}"
-          action: member
-        with_dict: "{{ constrained_delegation_targets }}"
+  - name: "Add members to delegation targets"
+    ipaservicedelegationtarget:
+        ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+        name: "{{ item.key }}"
+        principal: "{{ item.value }}"
+        action: member
+    with_dict: "{{ webserver_constrained_delegation_targets }}"
+    delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+    become: no
+    environment: "{{ env_ipa_on_server }}"
 
-      - name: "Create delegation rule {{ constrained_delegation_rule }}"
-        ipaservicedelegationrule:
-          ipaadmin_password: "{{ ipaadmin_password }}"
-          name: "{{ constrained_delegation_rule }}"
+  - name: "Create delegation rule {{ webserver_constrained_delegation_rule }}"
+    ipaservicedelegationrule:
+        ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+        name: "{{ webserver_constrained_delegation_rule }}"
+    delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+    become: no
+    environment: "{{ env_ipa_on_server }}"
 
-      - name: "Add targets to rule {{ constrained_delegation_rule }}"
-        ipaservicedelegationrule:
-          ipaadmin_password: "{{ ipaadmin_password }}"
-          name: "{{ constrained_delegation_rule }}"
-          target: "{{ item.key }}"
-          action: member
-        with_dict: "{{ constrained_delegation_targets }}"
+  - name: "Add targets to rule {{ webserver_constrained_delegation_rule }}"
+    ipaservicedelegationrule:
+        ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+        name: "{{ webserver_constrained_delegation_rule }}"
+        target: "{{ item.key }}"
+        action: member
+    with_dict: "{{ webserver_constrained_delegation_targets }}"
+    delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+    become: no
+    environment: "{{ env_ipa_on_server }}"
 
-      - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ constrained_delegation_rule }}"
-        shell:
-          cmd: |
-            trap kdestroy EXIT
+  - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ webserver_constrained_delegation_rule }}"
+    shell:
+      cmd: |
+        trap kdestroy EXIT
+        if [ -z "$KRB5_CLIENT_KTNAME" ]; then
             timeout 3s kinit || exit 2
-            if ipa servicedelegationrule-show {{ constrained_delegation_rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
-                exit 1
-            else
-                 ipa servicedelegationrule-add-member {{ constrained_delegation_rule }} --principals=HTTP/{{ ansible_fqdn }} || exit 2
-            fi
-          stdin: "{{ ipaadmin_password }}"
-        changed_when: add_princible_result.rc == 0
-        failed_when: add_princible_result.rc > 1
-        register: add_princible_result
+        fi
+        if ipa servicedelegationrule-show {{ webserver-delegation-rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
+            exit 1
+        else
+                ipa servicedelegationrule-add-member {{ webserver_constrained_delegation_rule }} --principals=HTTP/{{ ansible_fqdn }} || exit 2
+        fi
+      stdin: "{{ ipaadmin_password | default(omit) }}"
+    changed_when: add_princible_result.rc == 0
+    failed_when: add_princible_result.rc > 1
+    register: add_princible_result
+    environment: "{{ env_ipa_on_server }}"
 
-      # - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ constrained_delegation_rule }}"
+      # - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ webserver_constrained_delegation_rule }}"
       #   ipaservicedelegationrule:
       #     ipaadmin_password: "{{ ipaadmin_password }}"
-      #     name: "{{ constrained_delegation_rule }}"
+      #     name: "{{ webserver_constrained_delegation_rule }}"
       #     # principal: "HTTP/{{ ansible_fqdn }}"
       #     action: member
-    when: ipaadmin_password is defined
-  when: constrained_delegation_enabled
+  when: webserver_constrained_delegation_enabled
 
 - name: Enable and start services
   service:
-    name: "{{item }}"
+    name: "{{ item }}"
     enabled: yes
     state: started
   with_items:

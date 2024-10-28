@@ -1,5 +1,8 @@
 ---
 # tasks file for cockpit
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: Install packages
   package:
     name:
@@ -13,7 +16,7 @@
       - cockpit-system
       - cockpit-ws
       - python3-urllib-gssapi
-      - subscription-manager-cockpit
+#      - "{{ (distribution.name != 'AlmaLinux') | ternary('subscription-manager-cockpit', omit) }}"
     state: present
 
 - name: Get SSL certificate
@@ -26,36 +29,35 @@
     path: /etc/httpd
     state: directory
 
-- name: Create service
-  ipa_service:
+- name: "Create service HTTP/{{ ansible_fqdn }}"
+  ipaservice:
     name: "HTTP/{{ ansible_fqdn }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    https_proxy: ""
-    http_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
 
-- name: "Get keytab {{ keytab }}"
+- name: "Get keytab {{ httpd_keytab }}"
   shell:
-    cmd: >
-        kinit -k &&
-        ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ keytab }} &&
-        kdestroy
-    creates: "{{ keytab }}"
+    cmd: |
+      kinit -k || exit 1
+      ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k {{ httpd_keytab }} || exit 1
+      kdestroy
+    creates: "{{ httpd_keytab }}"
+  environment: "{{ env_ipa_on_host }}"
 
-- name: Symlink keytab
+- name: "Symlink keytab {{ httpd_keytab }} -> /etc/cockpit/krb5.keytab"
   file:
     state: link
     dest: /etc/cockpit/krb5.keytab
-    src: /etc/httpd/krb5.keytab
+    src: "{{ httpd_keytab }}"
 
-- name: Start cockpit
+- name: "Start cockpit"
   service:
     name: cockpit.socket
     enabled: yes
     state: started
 
-- name: Open cockpit firewalld
+- name: "Open cockpit firewalld"
   firewalld:
     service: cockpit
     permanent: yes
     state: enabled
+    immediate: yes

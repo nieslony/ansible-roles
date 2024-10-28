@@ -4,7 +4,7 @@
 #   - is_personal (default: false)
 #   - description (default: empty, added as SMB comment and .desktop file)
 #   - icon (added to .desktop file)
-exports:
+fileserver_exports:
     - path: /export/data
       share: data
       automount_key: data
@@ -18,19 +18,4 @@ exports:
       size: 5G
       group: root
       is_personal: true
-
-
-automount_location: "{{ freeipa_automount_location | default('default') }}"
-automount_map: auto.data
-
-krb5_realm: "{{ ansible_domain | upper }}"
-packages:
-    - ipa-client-samba
-    - nfs-utils
-    - python3-urllib-gssapi
-    - samba
-    - samba-winbind-clients
-
-personal_extra_opts:
-    private:
-        mode: "0700"
+      personal_folder_mode: "0700"
