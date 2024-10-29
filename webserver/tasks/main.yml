@@ -488,7 +488,7 @@
         if [ -z "$KRB5_CLIENT_KTNAME" ]; then
             timeout 3s kinit || exit 2
         fi
-        if ipa servicedelegationrule-show {{ webserver-delegation-rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
+        if ipa servicedelegationrule-show {{ webserver_constrained_delegation_rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
             exit 1
         else
                 ipa servicedelegationrule-add-member {{ webserver_constrained_delegation_rule }} --principals=HTTP/{{ ansible_fqdn }} || exit 2
