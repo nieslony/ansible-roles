@@ -57,9 +57,11 @@ dependencies:
           size: 20G
           group: media-editors
           description: "Music"
+          icon: folder-music
         - path: "{{ minidlna_videos_folder }}"
           share: videos
           automount_key: videos
           size: 5G
           group: media-editors
           description: "Videos"
+          icon: folder-video

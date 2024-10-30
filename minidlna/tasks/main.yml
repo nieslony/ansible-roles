@@ -35,16 +35,6 @@
     line: "friendly_name={{ minidlna_friendly_name }}"
   when: minidlna_friendly_name != ""
 
-- name: "Create .directory files"
-  copy:
-    dest: "{{ item.path }}/.directory"
-    content: |
-        [Desktop Entry]
-        Icon={{ item.icon }}
-  loop:
-    - { path: "{{ minidlna_music_folder }}", icon: folder-music }
-    - { path: "{{ minidlna_videos_folder }}", icon: folder-video }
-
 - name: "Start services"
   service:
     name: "{{ item }}"
