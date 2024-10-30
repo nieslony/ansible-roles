@@ -20,13 +20,11 @@
 - name: "DNS lookup ipa-ca.{{ ansible_domain }}"
   shell: >-
     for ip in $(
-        host ipa-ca.{{ ansible_domain }} |
-        grep "has address" |
-        tail -1 |
-        awk '{ print $NF; }'
+        host ipa-ca.{{ ansible_domain }} | awk '/has address/ { print $NF; }'
     ); do
-        if ping -c1 -t1 $ip > /dev/null
-            then host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+        if ping -c1 -t1 $ip > /dev/null ; then
+            host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
+            break
         fi
     done
   register: ipa_server_record
@@ -35,7 +33,7 @@
 - name: "Set facts based on DNS records"
   set_fact:
     mail_server: "{{ mail_server if mail_server is defined else mx_record.stdout }}"
-    ipa_server: "{{ ipa_server if ipa_server is defined else ipa_server_record.stdout }}"
+    ipa_server: "{{ ipa_server | default(ipa_server_record.stdout) }}"
     ldap_servers: "{{ ldap_servers if ldap_servers is defined else ldap_record.stdout_lines | sort }}"
     organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
 
