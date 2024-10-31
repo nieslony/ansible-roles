@@ -20,7 +20,9 @@
         rest_size: {{ rest_size }}
         home_new_size: {{ home_new_size }}
   listen: resize_home
-  when: ansible_lvm.vgs.system is defined
+  when:
+    - ansible_lvm.vgs.system is defined
+    - ansible_lvm.lvs.home is defined
 
 - name: "Resize home"
   vars:
@@ -35,7 +37,9 @@
     resizefs: yes
   ignore_errors: yes
   listen: resize_home
-  when: ansible_lvm.vgs.system is defined
+  when:
+    - ansible_lvm.vgs.system is defined
+    - ansible_lvm.lvs.home is defined
 
 - name: "gui: Start gdm"
   service:

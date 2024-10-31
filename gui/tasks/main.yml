@@ -49,34 +49,36 @@
     and
     (ansible_lvm.vgs.system.free_g|float / ansible_lvm.vgs.system.size_g|float > 0.1)
 
-- name: "Enable RpmFusion"
-  yum_repository:
-    name: "{{ item.name }}"
-    description: "{{ item.description }}"
-    metalink: "{{ item.metalink | default(omit) }}"
-    baseurl: "{{ item.baseurl | default(omit) }}"
-    gpgkey: "{{ item.gpgkey }}"
-  with_items:
-    - name: "rpmfusion-free"
-      description: "RPM Fusion for Fedora $releasever - Free"
-      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-$releasever&arch=$basearch"
-      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
-    - name: "rpmfusion-free-updates"
-      description: "RPM Fusion for Fedora $releasever - Free - Updates"
-      metalink: "https://mirrors.rpmfusion.org/metalink?repo=free-fedora-updates-released-$releasever&arch=$basearch"
-      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
-    - name: "rpmfusion-free-tainted"
-      description: "RPM Fusion for Fedora $releasever - Tainted"
-      baseurl: "https://mirrors.netix.net/rpmfusion/free/fedora/tainted/40/x86_64/"
-      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-free-fedora-2020"
-    - name: "rpmfusion-nonfree"
-      description: "RPM Fusion for Fedora $releasever - Nonfree"
-      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-$releasever&arch=$basearch"#
-      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
-    - name: "rpmfusion-nonfree-updates"
-      description: "RPM Fusion for Fedora $releasever - Nonfree - Updates"
-      metalink: "https://mirrors.rpmfusion.org/metalink?repo=nonfree-fedora-updates-released-$releasever&arch=$basearch"
-      gpgkey: "https://rpmfusion.org/keys?action=AttachFile&do=get&target=RPM-GPG-KEY-rpmfusion-nonfree-fedora-2020"
+- block:
+  - name: "Enable RpmFusion on EL"
+    command:
+      cmd: "dnf install -y {{ item.url }}"
+      creates: "/etc/yum.repos.d/{{ item.repo }}"
+    with_items:
+      - url: https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        repo: rpmfusion-free-updates.repo
+      - url: https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        repo: rpmfusion-nonfree-updates.repo
+    when:
+      - ansible_distribution_file_variety == "RedHat"
+      - ansible_distribution != "Fedora"
+
+  - name: "Enable RpmFusion on Fedora"
+    command:
+      cmd: "dnf install -y {{ item.url }}"
+      creates: "/etc/yum.repos.d/{{ item.repo }}"
+    with_items:
+      - url: https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        repo: rpmfusion-free-updates.repo
+      - url: https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{{ ansible_distribution_major_version }}.noarch.rpm
+        repo: rpmfusion-nonfree-updates.repo
+    when: ansible_distribution == "Fedora"
+
+  - name: "Install RpmFusion tainted"
+    dnf:
+      name:
+        - rpmfusion-free-release-tainted
+        - rpmfusion-nonfree-release-tainted
   when: not foreman['content_view'] is defined
 
 - name: Disable external repositories
@@ -99,7 +101,9 @@
     nobest: true
     skip_broken: true
     exclude: "{{ exclude_packages }}"
-  when: ansible_distribution == "CentOS"
+  when:
+    - ansible_distribution_file_variety == "RedHat"
+    - ansible_distribution != "Fedora"
 
 - name: "Install Fedora packages: {{ gui_rpm_packages_fedora | sort | join(', ') }}"
   dnf:

@@ -1,7 +1,7 @@
 vg_system_size: |
     {{ (system_volume_group is defined)
         | ternary(
-            ansible_lvm.vgs[system_volume_group].system.size_g }},
+            ansible_lvm.vgs[system_volume_group].size_g,
             0
         )
     }}
@@ -37,6 +37,8 @@ gui_rpm_extra_packages_fedora:
   - "@libreoffice"
   - abcde
   - gnome-network-displays
+  - nautilus-dropbox
+  - dropbox
 
 gui_rpm_packages:
   - "@gnome-desktop"
@@ -44,12 +46,10 @@ gui_rpm_packages:
   - "@workstation-product-environment"
   - NetworkManager-fortisslvpn-gnome
   - NetworkManager-openvpn-gnome
-  - abcde
   - cdrskin
   - cheese
   - clevis-dracut
   - digikam
-  - dropbox
   - flac
   - joe
   - k3b
@@ -60,7 +60,6 @@ gui_rpm_packages:
   - konqueror
   - lame
   - libdvdcss
-  - nautilus-dropbox
   - plasma-nm-fortisslvpn
   - unrar
   - vlc

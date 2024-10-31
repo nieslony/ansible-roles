@@ -4,16 +4,15 @@ devws_exclude_packages: []
 devws_extra_packages: []
 
 devws_extra_packages_centos:
-    - "@development"
-    - "@rpm-development-tools"
-    - "@virtualization-host-environment"
-    - postgresql-server
+  - "@development"
+  - "@rpm-development-tools"
+  - "@virtualization-host-environment"
 
 devws_extra_packages_fedora:
   - "@developer-workstation-environment"
-  - "postgresql-server"
   - "@virtualization"
   - rubygem-ruby-libvirt
+  - rustup
 
 devws_packages:
   - "@container-management"
@@ -38,6 +37,7 @@ devws_packages:
   - perl-XML-XPath
   - podman
   - podman-remote
+  - postgresql-server
   - pylint
   - python3-flask
   - python3-psycopg2
@@ -60,7 +60,6 @@ devws_packages:
   - rubygems-devel
   - rust-analyzer
   - rustfmt
-  - rustup
   - shyaml
   - squid
   - tito

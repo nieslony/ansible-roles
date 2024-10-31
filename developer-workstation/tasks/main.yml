@@ -45,12 +45,24 @@
     - ansible_lvm.vgs.system is defined
     - ansible_lvm.vgs.system.size_g|int > 200
 
+- block:
+    - name: "Add hashicorp repo"
+      command:
+        cmd: "dnf config-manager --add-repo https://rpm.releases.hashicorp.com/RHEL/hashicorp.repo"
+        creates: "/etc/yum.repos.d/hashicorp.repo"
+      when:
+        - ansible_distribution_file_variety == "RedHat"
+        - ansible_distribution != "Fedora"
+  when: not foreman['content_view'] is defined
+
 - name: "Install CentOS devel packages: {{ packages_centos | sort | join(', ') }}"
   dnf:
     name: "{{ packages_centos }}"
     state: present
     nobest: true
-  when: ansible_distribution == "CentOS"
+  when:
+    - ansible_distribution_file_variety == "RedHat"
+    - ansible_distribution != "Fedora"
 
 - name: "Install Fedora devel packages: {{ packages_fedora | sort | join(', ') }}"
   dnf:
@@ -115,9 +127,12 @@
 
 - name: Start and enable squid
   service:
-    name: squid
+    name: "{{ item }}"
     enabled: yes
     state: started
+  with_items:
+    - firewalld
+    - squid
 
 - name: Enable squid in firewall
   firewalld:
