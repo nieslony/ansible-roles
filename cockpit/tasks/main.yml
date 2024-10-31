@@ -7,16 +7,13 @@
   package:
     name:
       - cockpit
-#      - cockpit-navigator
       - cockpit-networkmanager
       - cockpit-packagekit
-      - cockpit-pcp
       - cockpit-selinux
       - cockpit-storaged
       - cockpit-system
       - cockpit-ws
       - python3-urllib-gssapi
-#      - "{{ (distribution.name != 'AlmaLinux') | ternary('subscription-manager-cockpit', omit) }}"
     state: present
 
 - name: Get SSL certificate
