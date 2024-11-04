@@ -31,6 +31,8 @@ logical_volumes_huge:
   - { name: "root",    size: "50G", mount_point: / }
 
 gui_rpm_extra_packages_centos:
+  - kernel-ml
+  - kernel-ml-modules-extra
   - libreoffice
 
 gui_rpm_extra_packages_fedora:
