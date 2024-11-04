@@ -58,13 +58,12 @@ dependencies:
           - { name: "{{ mail_cloud_fqdn}}", size_gb: "10" }
           - "{{ mail_autodiscover_fqdn }}"
           - "{{ ansible_fqdn }}"
-        enable_constrained_delegation: yes
 
-        constrained_delegation_enabled: yes
-        constrained_delegation_targets:
+        webserver_constrained_delegation_enabled: yes
+        webserver_constrained_delegation_targets:
             mail-imap-target:
                 - "imap/{{ ansible_fqdn }}"
-        constrained_delegation_rule: mail-delegation-rule
+        webserver_constrained_delegation_rule: mail-delegation-rule
 
         webserver_lvm_volsize_gb: 10
         webserver_enable_constrained_delegation: yes
