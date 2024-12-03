@@ -95,157 +95,49 @@
     mode: "2775"
   loop: "{{ vhost_names }}"
 
-- name: Scan host objects of vhosts
-  shell: |
-    kinit -k
-    ipa host-show {{ item }} --raw | grep -q "managedby: fqdn={{ ansible_fqdn }}"
-    kdestroy
+- name: "Create host objects for vhosts {{ vhost_names }}"
+  ipahost:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    fqdn: "{{ item }}"
+    state: present
+    force: yes
+    random: yes
+    update_password: on_create
+    managedby_host: "{{ ansible_fqdn }}"
   loop: "{{ vhost_names }}"
-  register: found_managedby
-  ignore_errors: yes
-  changed_when: no
+  when: item != ansible_fqdn
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
-- set_fact:
-    add_managed: []
+- name: "Create CNAMES for vhost {{ vhost_names }}"
+  ipadnsrecord:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    zone_name: "{{ item.split('.')[1:] | join('.') }}"
+    record_type: CNAME
+    record_value: "{{ ansible_fqdn }}."
+    name: "{{ item | split('.') | first }}"
+  loop: "{{ vhost_names }}"
+  when: item != ansible_fqdn
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
-- name: Find unmanaged hosts
-  set_fact:
-    add_managed: "{{ add_managed | default([]) + [item.item] }}"
-  with_items: "{{ found_managedby.results }}"
-  when:
-    - item.rc == 1
-    - item.item != ansible_fqdn
-
-- debug:
-    var: add_managed
-
-- name: "Create CNAMES and host objects remote with admin password"
-  block:
-    - debug:
-        msg: "Create CNAMES and host objects remote with admin password"
-
-    - name: "Create host objects {{ vhost_names }}"
-      ipa_host:
-        ipa_host: "{{ ipa_server | default(omit) }}"
-        ipa_pass: "{{ ipaadmin_password }}"
-        fqdn: "{{ item }}"
-        state: present
-        force: yes
-        random_password: yes
-      loop: "{{ add_managed }}"
-      environment:
-        http_proxy: ""
-        https_proxy: ""
-
-    - name: "Create CNAMES for vhost {{ vhost_names }}"
-      ipa_dnsrecord:
-        ipa_pass: "{{ ipaadmin_password }}"
-        ipa_host: "{{ ipa_server | default(omit) }}"
-        zone_name: "{{ item.split('.')[1:] | join('.') }}"
-        record_type: CNAME
-        record_value: "{{ ansible_fqdn }}."
-        record_name: "{{ item | split('.') | first }}"
-      when:
-        - item != ansible_fqdn
-        - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
-      loop: "{{ vhost_names }}"
-      environment:
-        http_proxy: ""
-        https_proxy: ""
-
-    - name: "Add managedby {{ ansible_fqdn }} to {{ add_managed }}"
-      shell: |
-        echo "{{ ipaadmin_password }}" | kinit admin
-        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }}
-        kdestroy
-      when: item != ansible_fqdn
-      loop: "{{ add_managed }}"
-  when: ipaadmin_password is defined
-
-- name: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
-  block:
-    - debug:
-        msg: "Create CNAMES and host objects remote with keytab {{ realm_keytab }}"
-
-    - name: "Create host objects {{ vhost_names }}"
-      vars:
-        ansible_python_interpreter: /bin/python3.6
-      ipa_host:
-        fqdn: "{{ item }}"
-        state: present
-        force: true
-        random_password: yes
-      when: item != ansible_fqdn
-      loop: "{{ vhost_names }}"
-      environment:
-        KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
-
-    - name: "Create CNAMES for vhosts {{ vhost_names }}"
-      vars:
-        ansible_python_interpreter: /bin/python3.6
-      ipa_dnsrecord:
-        zone_name: "{{ item.split('.')[1:] | join('.') }}"
-        record_type: CNAME
-        record_value: "{{ ansible_fqdn }}."
-        record_name: "{{ item | split('.') | first }}"
-      when:
-        - item != ansible_fqdn
-        - ((item | split('.'))[1:] | join('.')) in ipa_dns_domains
-      loop: "{{ vhost_names }}"
-      environment:
-        KRB5_CLIENT_KTNAME: "{{ realm_keytab }}"
-
-    - name: "Add managedby {{ ansible_fqdn }}"
-      shell: |
-        kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
-        ipa host-add-managedby --hosts={{ ansible_fqdn }} {{ item }} || exit 1
-        kdestroy
-      loop: "{{ add_managed }}"
-  when: is_realmproxy
-  delegate_to: 127.0.0.1
-
-- name: "Create service HTTP/{{ ansible_fqdn }} on {{ ipa_server }}"
-  ipa_service:
+- name: "Create service HTTP/{{ ansible_fqdn }}"
+  ipaservice:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "HTTP/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server | default(omit) }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
+    host: "{{ ansible_fqdn }}"
+    principal: "{{ vhost_names | difference([ansible_fqdn]) | map('regex_replace', '^', 'HTTP/') }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
-- name: "Find krbprincipalname of service HTTP/{{ ansible_fqdn }}"
-  shell: |
-    kinit -k
-    ipa service-show --raw HTTP/{{ ansible_fqdn }} | awk '/krbprincipalname:/ {
-        split($2, arr, "@");
-        print arr[1];
-    }'
-    kdestroy
-  register: find_krbprincipalname
-  changed_when: no
-
-- block:
-    - name: "Create krbprincipalname {{ find_krbprincipalname.stdout_lines | join(', ') }} of service HTTP/{{ ansible_fqdn }} with keytab"
-      shell: |
-            kinit -k -t {{ realm_keytab }} realm-proxy || exit 1
-            ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
-            kdestroy
-      loop: "{{ vhost_names }}"
-      when: ("HTTP/" + item) not in find_krbprincipalname.stdout_lines
-      delegate_to: 127.0.0.1
-  when: is_realmproxy
-
-- block:
-    - name: "Create krbprincipalname {{ find_krbprincipalname.stdout_lines | join(', ') }} of service HTTP/{{ ansible_fqdn }} with admin password"
-      shell:
-        cmd: |
-          kinit || exit 1
-          ipa service-add-principal HTTP/{{ ansible_fqdn }} HTTP/{{ item }}
-          kdestroy
-        stdin: "{{ ipaadmin_password }}\n"
-      loop: "{{ vhost_names }}"
-      when: ("HTTP/" + item) not in find_krbprincipalname.stdout_lines
-  when: ipaadmin_password is defined
+# - name: "Get keytab (ansible) {{ env_ipa_on_host }}"
+#   community.general.ipa_getkeytab:
+#     path: /etc/httpd/krb5.keytab
+#     principal: "HTTP/{{ ansible_fqdn }}"
+#   environment: "{{ env_ipa_on_host }}"
 
 - name: "Get keytab"
   shell:
@@ -279,10 +171,7 @@
             {%- endfor %}
             --wait
     creates: "{{ ssl_cert_file }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
   notify: restart_httpd
 
 - name: Copy default_vhost.conf
