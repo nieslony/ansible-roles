@@ -30,6 +30,7 @@ devws_packages:
   - java-17-openjdk-devel
   - java-21-openjdk-devel
   - java-latest-openjdk-devel
+  - ksmtuned
   - libguestfs
   - libvirt
   - libvirt-devel
