@@ -10,6 +10,9 @@
     vhost_names: "{{ (vhost_names is defined) | ternary(vhost_names, []) + [ (item is string) | ternary(item, item.name) ] }}"
   loop: "{{ webserver_vhosts }}"
 
+- set_fact:
+    vhost_aliases: "{{ vhost_names | difference([ansible_fqdn]) }}"
+
 - name: "Create logical volume for /var/www"
   block:
     - name: "Create volume {{ lvm_volume }} with size {{ webserver_lvm_volsize_gb }}GB"
@@ -123,12 +126,15 @@
   become: no
   environment: "{{ env_ipa_on_server }}"
 
-- name: "Create service HTTP/{{ ansible_fqdn }}"
+- name: "Build additional service principal"
+  set_fact:
+    service_princs: "{{ vhost_aliases | difference([ansible_fqdn]) | map('regex_replace', '^', 'HTTP/') }}"
+
+- name: "Create service HTTP/{{ ansible_fqdn }} with additional service principals {{ service_princs }}"
   ipaservice:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "HTTP/{{ ansible_fqdn }}"
-    host: "{{ ansible_fqdn }}"
-    principal: "{{ vhost_names | difference([ansible_fqdn]) | map('regex_replace', '^', 'HTTP/') }}"
+    principal: "{{ (service_princs | length > 0) | ternary(service_princs, omit) }}"
   delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
   become: no
   environment: "{{ env_ipa_on_server }}"
