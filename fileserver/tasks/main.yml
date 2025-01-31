@@ -41,6 +41,16 @@
         "{{ fileserver_exports }}"
   when: system_volume_group is defined
 
+- name: "Create groups"
+  ipagroup:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    name: "{{ item.group }}"
+  with_items: "{{ fileserver_exports }}"
+  when: fileserver_create_groups and item.group is defined
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+
 - name: "Set permissions"
   file:
     path: "{{ item.path }}"
