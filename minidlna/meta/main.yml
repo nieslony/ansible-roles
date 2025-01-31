@@ -50,6 +50,7 @@ galaxy_info:
 dependencies:
   - role: fileserver
     vars:
+      fileserver_create_groups: true
       fileserver_exports:
         - path: "{{ minidlna_music_folder }}"
           share: music

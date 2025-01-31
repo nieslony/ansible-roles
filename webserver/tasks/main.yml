@@ -346,6 +346,21 @@
     become: no
     environment: "{{ env_ipa_on_server }}"
 
+  - set_fact:
+      local_delegation_targets: "{{
+        webserver_constrained_delegation_targets.values()
+            | flatten
+            | map('regex_replace', '@.*', '')
+            | unique
+            | select('regex', '/' + ansible_fqdn + '$')
+            }}"
+
+  - name: "Create local delagation targets: {{ local_delegation_targets }}"
+    ipaservice:
+      name: "{{ item }}"
+    environment: "{{ env_ipa_on_host }}"
+    with_items: "{{ local_delegation_targets }}"
+
   - name: "Add members to delegation targets"
     ipaservicedelegationtarget:
         ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"

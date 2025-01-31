@@ -18,13 +18,9 @@
   changed_when: false
 
 - name: "postfix : Create service smtp/{{ ansible_fqdn }}"
-  ipa_service:
+  ipaservice:
     name: "smtp/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
 
 - name: "postfix : Get keytab for smtp"
   block:
