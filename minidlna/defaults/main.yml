@@ -1,4 +1,4 @@
-minidlna_friendly_name: "MiniDLNA - {{ ansible_fqdn }}"
+minidlna_friendly_name: "MiniDLNA - {{ ansible_hostname }}"
 
 minidlna_music_folder: /data/music
 minidlna_videos_folder:  /data/videos
