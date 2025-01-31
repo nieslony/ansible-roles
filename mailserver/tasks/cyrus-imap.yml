@@ -53,15 +53,10 @@
       cyrus_destination_recipient_limit: 1
       relay_domains: "{{ mail_domain }}"
 
-
 - name: "cyrus-imapd : Create services"
-  ipa_service:
+  ipaservice:
     name: "{{ item }}/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server | default(omit) }}"
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
   loop:
     - imap
     - sieve

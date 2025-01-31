@@ -4,6 +4,7 @@
 #   - is_personal (default: false)
 #   - description (default: empty, added as SMB comment and .desktop file)
 #   - icon (added to .desktop file)
+fileserver_create_groups: false
 fileserver_exports:
     - path: /export/data
       share: data

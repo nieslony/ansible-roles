@@ -56,66 +56,20 @@
   register: stat_nextcloud
   changed_when: no
 
-- name: "nextcloud : find nextcloud users"
-  shell:
-    cmd: >
-        for i in {{
-            nextcloud_ipa_users.values()
-            | selectattr('name')
-            | map(attribute='name')
-            | join(' ')
-        }} ; do
-            getent passwd $i | awk -F: '{ print $1; }' ;
-        done
-  register: found_users
-  changed_when: no
-
-- set_fact:
-    create_users: {}
-
-- set_fact:
-    create_users: "{{ create_users | combine({item.key: item.value}) }}"
-  when: item.value.name not in found_users.stdout_lines
-  loop: "{{ nextcloud_ipa_users | dict2items }}"
-
-- name: "nextcloud : Create email users {{ create_users.keys() | list }} with keytab"
-  shell:
-    cmd: >-
-      ipa user-add "{{ item.value.name }}"
-      --displayname="{{ item.value.displayname }}"
-      --password
-      --password-expiration="2050-12-31Z"
-      --email="{{ item.value.mail }}"
-      --first="{{ item.value.givenname }}"
-      --last="{{ item.value.sn }}"
-    stdin: "{{ item.password }}\n{{ item.password }}\n"
-  loop: "{{ create_users | dict2items }}"
-  delegate_to: 127.0.0.1
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/foreman-proxy/freeipa.keytab
-    http_proxy: ""
-    https_proxy: ""
-    HOME: /tmp
-  when: is_realmproxy
-
-- name: "nextcloud : Create email users {{ create_users.keys() | list }} with admin password"
-  ipa_user:
+- name: "nextcloud : Create email users {{ nextcloud_ipa_users.keys() | list }}"
+  ipauser:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ item.value.name }}"
-    displayname: "{{ item.value.displayname }}"
     password: "{{ item.value.password }}"
-    mail: "{{ item.value.mail | default(omit) }}"
-    givenname: "{{ item.value.givenname }}"
-    sn: "{{ item.value.sn }}"
-    krbpasswordexpiration: "2050-12-31"
-    state: present
+    passwordexpiration: "2050-12-31"
+    email: "{{ item.value.mail | default(omit) }}"
+    first: "{{ item.value.givenname }}"
+    last: "{{ item.value.sn }}"
     update_password: on_create
-    ipa_pass: "{{ ipaadmin_password }}"
-    ipa_host: "{{ ipa_server | default(omit) }}"
-  loop: "{{ create_users | dict2items }}"
-  environment:
-    http_proxy: ""
-    https_proxy: ""
-  when: ipaadmin_password is defined
+  with_dict: "{{ nextcloud_ipa_users }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
 - name: "nextcloud : Download and install software"
   block:

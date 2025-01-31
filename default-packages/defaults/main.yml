@@ -3,6 +3,7 @@ default_packages:
     - bash-completion
     - bind-utils
     - emacs-nox
+    - firewalld
     - langpacks-de
     - langpacks-en
     - langpacks-it

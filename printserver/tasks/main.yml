@@ -6,17 +6,11 @@
     name: "{{ packages }}"
 
 - name: "Create services on {{ ipa_server }}"
-  ipa_service:
+  ipaservice:
     name: "{{ item }}/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server }}"
   loop:
     - HTTP
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
-    HTTP_PROXY: ""
-    HTTPS_PROXY: ""
+  environment: "{{ env_ipa_on_host }}"
 
 - name: "Find HTTP/{{ ansible_fqdn }} in /etc/krb5.keytab"
   shell:
@@ -140,6 +134,14 @@
     content: "{{ cupsd_conf_content_new }}"
   when: cupsd_conf_content_new != (cuspd_conf_content.content | b64decode)
   notify: restart_cups
+
+- name: "Create admin group {{ printserver_admin_group }}"
+  ipagroup:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    name: "{{ printserver_admin_group }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
 
 - name: "Find {{ printserver_admin_group }} group in SystemGroup"
   replace:

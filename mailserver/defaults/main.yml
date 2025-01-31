@@ -207,7 +207,6 @@ nextcloud_ipa_users:
       name: ldap-nextcloud
       displayname: Nextcloud
       password: ohnaChahr5eeshie
-      mail:
       givenname: Nextcloud
       sn: LDAP
 nextcloud_system_config:

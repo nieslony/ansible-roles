@@ -41,6 +41,16 @@
         "{{ fileserver_exports }}"
   when: system_volume_group is defined
 
+- name: "Create groups"
+  ipagroup:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    name: "{{ item.group }}"
+  with_items: "{{ fileserver_exports }}"
+  when: fileserver_create_groups and item.group is defined
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+
 - name: "Set permissions"
   file:
     path: "{{ item.path }}"
@@ -48,17 +58,13 @@
     mode: "{{ item.mode | default(2775) }}"
   loop: "{{ fileserver_exports }}"
 
-- name: "Create services on {{ ipa_server }}"
-  ipa_service:
+- name: "Create services"
+  ipaservice:
     name: "{{ item }}/{{ ansible_fqdn }}"
-    ipa_host: "{{ ipa_server }}"
   loop:
     - cifs
     - nfs
-  environment:
-    KRB5_CLIENT_KTNAME: /etc/krb5.keytab
-    http_proxy: ""
-    https_proxy: ""
+  environment: "{{ env_ipa_on_host }}"
 
 - name: "Get samba keytab"
   shell:
