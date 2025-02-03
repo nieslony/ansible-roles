@@ -129,3 +129,16 @@
         "{{ mediawiki_name }}" "{{ mediawiki_admin_user }}"
     chdir: "{{ mediawiki_folder }}"
     creates: "{{ mediawiki_folder }}/LocalSettings.php"
+
+- name: "Install Apache configuration"
+  template:
+    src: mediawiki.conf
+    dest: "/etc/httpd/conf.d/{{ mediawiki_vhost }}.conf.inc.d/mediawiki.conf"
+  notify: restart_httpd
+
+- name: "Configure Article Path"
+  lineinfile:
+    path: "{{ mediawiki_folder }}/LocalSettings.php"
+    line: '$wgArticlePath = "/wiki/$1";'
+    regexp: '^$wgArticlePath *='
+  notify: restart_httpd
