@@ -1,2 +1,15 @@
 ---
 # defaults file for mediawiki
+
+mediawiki_name: "My Wiki"
+
+mediawiki_admin_user: wiki-admin
+mediawiki_admin_password: ChangeMe123
+
+mediawiki_version: "1.43.0"
+mediawiki_vhost: "{{ ansible_fqdn }}"
+mediawiki_folder: "/var/www/html/{{ mediawiki_vhost }}/mediawiki"
+
+mediawiki_db_name: mediawiki
+mediawiki_db_user: mediawiki
+mediawiki_db_password: hlkjhkjhkjlhkjh

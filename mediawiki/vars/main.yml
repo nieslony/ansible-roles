@@ -1,0 +1,25 @@
+---
+# vars file for mediawiki
+
+php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+php_version: 84
+packages:
+  - "gd"
+  - "git"
+  - "php{{ php_version }}-php"
+  - "php{{ php_version }}-php-cli"
+  - "php{{ php_version }}-php-ctype"
+  - "php{{ php_version }}-php-dom"
+  - "php{{ php_version }}-php-fileinfo"
+  - "php{{ php_version }}-php-iconv"
+  - "php{{ php_version }}-php-intl"
+  - "php{{ php_version }}-php-json"
+  - "php{{ php_version }}-php-libxml"
+  - "php{{ php_version }}-php-mbstring"
+  - "php{{ php_version }}-php-openssl"
+  - "php{{ php_version }}-php-pgsql"
+  - "php{{ php_version }}-php-xml"
+  - "php{{ php_version }}-php-xmlreader"
+  - "postgresql-server"
+  - "python3-psycopg2"
+skin_url: https://extdist.wmflabs.org/dist/skins/Vector-REL1_43-b8febf7.tar.gz

@@ -1,2 +1,131 @@
 ---
 # tasks file for mediawiki
+
+# https://releases.wikimedia.org/mediawiki/1.43/mediawiki-core-1.43.0.tar.gz
+
+- block:
+  - name: "Find remi repo"
+    stat:
+      path: /etc/yum.repos.d/remi.repo
+    register: stat_remi_repo
+
+  - name: "Add PHP remi repo"
+    dnf:
+      name: "{{ php_remi_repo }}"
+      disable_gpg_check: yes
+    when:
+      - php_remi_repo != ""
+      - not stat_remi_repo.stat.exists
+  when: foreman['organization'] is not defined
+
+- name: "Install packages: {{ packages | join(', ') }}"
+  dnf:
+    name: "{{ packages }}"
+  notify: restart_httpd
+
+- name: "Find mediawiki folder {{ mediawiki_folder }}"
+  stat:
+    path: "{{ mediawiki_folder }}"
+  register: stat_mediawiki
+
+- block:
+  - set_fact:
+      version_split: "{{ mediawiki_version | split('.') }}"
+
+  - set_fact:
+      mediawiki_url: "https://releases.wikimedia.org/mediawiki/{{ version_split[0] }}.{{ version_split[1] }}/mediawiki-core-{{ mediawiki_version }}.tar.gz"
+
+  - name: "Download mediawiki from {{ mediawiki_url }}"
+    uri:
+      url: "{{ mediawiki_url }}"
+      dest: /tmp
+
+  - name: "Create {{ mediawiki_folder }}"
+    file:
+      path: "{{ mediawiki_folder }}"
+      state: directory
+
+  - name: "Extract mediawiki"
+    unarchive:
+      src: "/tmp/mediawiki-core-{{ mediawiki_version }}.tar.gz"
+      dest: "{{ mediawiki_folder }}"
+      remote_src: yes
+      extra_opts:
+      - --transform
+      - s/^mediawiki-[0-9.]*.//
+  when: not stat_mediawiki.stat.exists
+
+- name: "Find skin {{ mediawiki_folder }}/skins/Vector"
+  stat:
+    path: "{{ mediawiki_folder }}/skins/Vector"
+  register: stat_skin_vector
+
+- block:
+  - name: "Download Vector skin from {{ skin_url }}"
+    uri:
+      url: "{{ skin_url }}"
+      dest: /tmp
+
+  - name: "Install Vector skin "
+    unarchive:
+      src: "/tmp/{{ skin_url | split('/') | last }}"
+      dest: "{{ mediawiki_folder }}/skins"
+      remote_src: yes
+  when: not stat_skin_vector.stat.exists
+
+  #   https://extdist.wmflabs.org/dist/skins/Vector-REL1_39-5979512.tar.gz
+
+- name: "Initialize postgresql data folder"
+  command:
+    cmd: /usr/bin/postgresql-setup --initdb
+    creates: /var/lib/pgsql/data/pg_hba.conf
+
+- name: "Configure access to postgres server"
+  postgresql_pg_hba:
+    dest: /var/lib/pgsql/data/pg_hba.conf
+    contype: host
+    users: "{{ mediawiki_db_user }}"
+    address: localhost
+    method: password
+    databases: "{{ mediawiki_db_name }}"
+
+- name: "Start postgresql"
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: "Create postgresql user {{ mediawiki_db_user }}"
+  postgresql_user:
+    name: "{{ mediawiki_db_user }}"
+    password: "{{ mediawiki_db_password }}"
+    encrypted: yes
+    role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+  become: yes
+  become_user: postgres
+
+- name: "Create postgresql database {{ mediawiki_db_name }}"
+  postgresql_db:
+    name: "{{ mediawiki_db_name }}"
+    owner: "{{ mediawiki_db_user }}"
+  become: yes
+  become_user: postgres
+
+- name: "Allow database connection"
+  seboolean:
+    name: httpd_can_network_connect_db
+    state: true
+    persistent: true
+  notify: restart_httpd
+
+- name: "Setup MediaWiki"
+  command:
+    cmd: >-
+        php84 maintenance/run.php install
+        --dbname={{ mediawiki_db_name }} --dbserver=localhost --dbuser={{ mediawiki_db_user }} --dbpass={{ mediawiki_db_password }}
+        --dbtype=postgres
+        --server=https://{{ mediawiki_vhost }}/
+        --pass="{{ mediawiki_admin_password }}"
+        "{{ mediawiki_name }}" "{{ mediawiki_admin_user }}"
+    chdir: "{{ mediawiki_folder }}"
+    creates: "{{ mediawiki_folder }}/LocalSettings.php"
