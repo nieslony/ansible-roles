@@ -1,3 +1,3 @@
 # defaults file for 802.1x_Network
-net_802_1x_connection_name: ConnectionName
 net_802_1x_connection_ssid: connection_ssid
+net_802_1x_connection_name: "{{ net_802_1x_connection_ssid }} @ {{ organization }}"
