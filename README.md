@@ -70,9 +70,11 @@ The following ansible collections are required:
  - community.crypto
 
  - community.general
+ 
+ - community.mysql 
 
- - community.mysql
-
+ - community.postgresql
+ 
  - freeipa.ansible_freeipa
 
 Add the collections with:
