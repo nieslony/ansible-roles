@@ -221,7 +221,7 @@ function create_bookmarks {
     {% for bookmark in file_bookmarks %}
     if [ -e "{{ bookmark.url[7:] }}/.smb-preexec-hint" ]; then
         share=$( cat "{{ bookmark.url[7:] }}/.smb-preexec-hint" | awk '/^\/\/[a-z]/ { print $0; }' )
-        smbclient --no-pass "$share" -c quit || has_errors="yes"
+        smbclient --use-kerberos=required "$share" -c quit || has_errors="yes"
     fi
     {% endfor %}
 
