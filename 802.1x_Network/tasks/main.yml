@@ -1,4 +1,6 @@
 # tasks file for 802.1x_Network
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
 
 - name: "Create certificate folder"
   file:
