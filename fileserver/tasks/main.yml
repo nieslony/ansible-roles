@@ -118,6 +118,27 @@
     dest: /etc/exports
   notify: exportfs
 
+- name: "Create automount map {{ automount_map }} in location {{ automount_location }}"
+  ipaautomountmap:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    location: "{{ automount_location }}"
+    name: "{{ automount_map }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+
+- name: "Add automount map {{ automount_map }} to auto.master"
+  ipaautomountkey:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    location: "{{ automount_location }}"
+    mapname: auto.master
+    key: "/{{ automount_map | split('.') | last }}"
+    info: "{{ automount_map }}"
+    state: present
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+
 - name: "Create automount keys"
   ipaautomountkey:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
