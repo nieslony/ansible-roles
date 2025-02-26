@@ -50,6 +50,7 @@
     ifname: "{{ hostapd_bridge_name }}"
     state: present
     autoconnect: yes
+    conn_reload: yes
     stp: no
   notify: restart_networkmanager
 
@@ -59,18 +60,15 @@
     slave_type: bridge
     conn_name: "{{ hostapd_bridge_name }}-{{ hostapd_bridge_slave_if }}"
     ifname: "{{ hostapd_bridge_slave_if }}"
-    state: present
+    state: up
     master: "{{ hostapd_bridge_name }}"
+    conn_reload: yes
     autoconnect: yes
   when: hostapd_bridge_slave_if.startswith("eth") or hostapd_bridge_slave_if.startswith("en")
   notify: restart_networkmanager
 
 - name: "Flush handlers"
   meta: flush_handlers
-
-- name: "Enable bridge"
-  command: "nmcli con up {{ hostapd_bridge_name }}"
-  changed_when: no
 
 - name: "Install packages"
   dnf:
