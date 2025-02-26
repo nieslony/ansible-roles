@@ -139,18 +139,11 @@
   become: no
   environment: "{{ env_ipa_on_server }}"
 
-# - name: "Get keytab (ansible) {{ env_ipa_on_host }}"
-#   community.general.ipa_getkeytab:
-#     path: /etc/httpd/krb5.keytab
-#     principal: "HTTP/{{ ansible_fqdn }}"
-#   environment: "{{ env_ipa_on_host }}"
-
 - name: "Get keytab"
   shell:
     cmd: |
-        kinit -k
+        kinit -k || exit 1
         ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/httpd/krb5.keytab
-        kdestroy
     creates: /etc/httpd/krb5.keytab
 
 - name: "Chown keytab"
