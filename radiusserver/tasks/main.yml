@@ -78,11 +78,14 @@
     line: "$INCLUDE client-hostap.conf"
   notify: Restart radiusd
 
-- name: Start service radiusd
+- name: Start services
   service:
-    name: radiusd
+    name: "{{ item }}"
     enabled: yes
     state: started
+  with_items:
+    - radiusd
+    - firewalld
 
 - name: Open firewall
   firewalld:
