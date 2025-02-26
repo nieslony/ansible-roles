@@ -6,6 +6,7 @@
     name:
       - kernel-ml
       - kernel-ml-modules-extra
+      - linux-firmware
   register: install_kernel
 
 - block:
@@ -24,7 +25,7 @@
 
 - name: "Fail if no wifi adapter found"
   fail:
-    msg: "No wifi adapter found"
+    msg: "No wifi adapter found: {{ ansible_facts.interfaces }}"
   when: wifi_adapter is undefined or wifi_adapter == ""
 
 - name: "Add NetworkManager plugin"
@@ -74,7 +75,7 @@
 
 - name: "Install packages"
   dnf:
-    state: present
+    state: latest
     name:
       - hostapd
       - iw
@@ -85,7 +86,16 @@
   template:
     src: hostapd.conf
     dest: /etc/hostapd/hostapd.conf
+    group: apache
+    mode: 0640
   notify: restart_hostapd
+
+- name: "Install apache config show-hotspot-settings.conf"
+  file:
+    src: /usr/share/show-hotspot-settings/show-hotspot-settings.conf
+    dest: "/etc/httpd/conf.d/{{ ansible_fqdn }}.conf.inc.d/show-hotspot-settings.conf"
+    state: link
+  notify: restart_httpd
 
 - name: "Start services"
   service:
