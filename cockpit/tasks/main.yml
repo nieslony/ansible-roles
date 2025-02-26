@@ -46,11 +46,14 @@
     dest: /etc/cockpit/krb5.keytab
     src: "{{ httpd_keytab }}"
 
-- name: "Start cockpit"
+- name: "Start services"
   service:
-    name: cockpit.socket
+    name: "{{ item }}"
     enabled: yes
     state: started
+  with_items:
+    - cockpit.socket
+    - firewalld
 
 - name: "Open cockpit firewalld"
   firewalld:
