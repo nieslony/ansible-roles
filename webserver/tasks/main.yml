@@ -387,9 +387,10 @@
   - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ webserver_constrained_delegation_rule }}"
     shell:
       cmd: |
-        trap kdestroy EXIT
+        trap kdestroy -A EXIT
         if [ -z "$KRB5_CLIENT_KTNAME" ]; then
-            timeout 3s kinit || exit 2
+            sleep 1
+            timeout 3s kinit admin || exit 2
         fi
         if ipa servicedelegationrule-show {{ webserver_constrained_delegation_rule }} --raw | grep -q "memberprincipal: HTTP/{{ ansible_fqdn }}" ; then
             exit 1
