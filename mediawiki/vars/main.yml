@@ -22,4 +22,4 @@ packages:
   - "php{{ php_version }}-php-xmlreader"
   - "postgresql-server"
   - "python3-psycopg2"
-skin_url: https://extdist.wmflabs.org/dist/skins/Vector-REL1_43-b8febf7.tar.gz
+skin_index_url: https://extdist.wmflabs.org/dist/skins/

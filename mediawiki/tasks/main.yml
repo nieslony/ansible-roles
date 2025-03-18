@@ -28,12 +28,12 @@
     path: "{{ mediawiki_folder }}"
   register: stat_mediawiki
 
+- set_fact:
+    mediawiki_version_split: "{{ mediawiki_version | split('.') }}"
+
 - block:
   - set_fact:
-      version_split: "{{ mediawiki_version | split('.') }}"
-
-  - set_fact:
-      mediawiki_url: "https://releases.wikimedia.org/mediawiki/{{ version_split[0] }}.{{ version_split[1] }}/mediawiki-core-{{ mediawiki_version }}.tar.gz"
+      mediawiki_url: "https://releases.wikimedia.org/mediawiki/{{ mediawiki_version_split[0] }}.{{ mediawiki_version_split[1] }}/mediawiki-core-{{ mediawiki_version }}.tar.gz"
 
   - name: "Download mediawiki from {{ mediawiki_url }}"
     uri:
@@ -61,6 +61,19 @@
   register: stat_skin_vector
 
 - block:
+  - name: "Find Vector URL"
+    uri:
+      url: "{{ skin_index_url }}"
+      return_content: true
+    register: vector_index
+
+  - set_fact:
+      skin_url: "{{ skin_index_url }}{{
+        vector_index.content
+        | regex_findall('>(Vector-REL1_' + mediawiki_version_split[1] + '-[0-9a-f]{7}.tar.gz)<', multiline=True)
+        | last
+        }}"
+
   - name: "Download Vector skin from {{ skin_url }}"
     uri:
       url: "{{ skin_url }}"
