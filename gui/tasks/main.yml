@@ -182,6 +182,7 @@
   service:
     name: sddm
     enabled: no
+  when: ansible_facts['services']['sddm.service']['status'] | default('not-found') != 'not-found'
 
 - name: Enable gdm
   service:
