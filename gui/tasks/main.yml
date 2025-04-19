@@ -178,11 +178,16 @@
   command: systemctl set-default graphical.target
   when: "'graphical' not in systemdefault.stdout"
 
+- name: "Get sddm status"
+  systemd:
+    name: "sddm.service"
+  register: sddm_status
+
 - name: Disable sddm
   service:
     name: sddm
     enabled: no
-  when: ansible_facts['services']['sddm.service']['status'] | default('not-found') != 'not-found'
+  when: sddm_status.status.ExecStart is defined
 
 - name: Enable gdm
   service:
