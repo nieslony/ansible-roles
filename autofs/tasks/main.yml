@@ -11,6 +11,9 @@
                 | regex_search('ipa_automount_location *= *(.*)', multiline=True)
         }}
 
+- debug:
+    var: sssd_automount_location
+
 - name: "Configure automount from IPA"
   command:
     cmd: "ipa-client-automount --location={{ automount_location }} --unattended"
@@ -18,6 +21,8 @@
     - automount_location is defined
     - automount_location | length > 0
     - sssd_automount_location == ""
+  register: ipa_client_automount
+  failed_when: ipa_client_automount.rc not in [0,3]
 
 - name: "autofs: Configure autofs.conf"
   ini_file:
