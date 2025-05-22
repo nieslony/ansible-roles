@@ -26,10 +26,7 @@ devws_packages:
   - clippy
   - cockpit-machines
   - cockpit-podman
-  - java-11-openjdk-devel
-  - java-17-openjdk-devel
-  - java-21-openjdk-devel
-  - java-latest-openjdk-devel
+  - java-*-openjdk-devel
   - ksmtuned
   - libguestfs
   - libvirt
