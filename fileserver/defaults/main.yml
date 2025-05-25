@@ -20,3 +20,5 @@ fileserver_exports:
       group: root
       is_personal: true
       personal_folder_mode: "0700"
+fileserver_data_filesystem: xfs
+

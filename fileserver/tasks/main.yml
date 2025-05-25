@@ -39,7 +39,28 @@
         state: mounted
     loop:
         "{{ fileserver_exports }}"
-  when: system_volume_group is defined
+  when:
+    - system_volume_group is defined
+    - fileserver_data_filesystem == "xfs"
+
+- block:
+  - name: "Add OpenZFS repository"
+    command:
+        cmd: dnf install -y https://zfsonlinux.org/epel/zfs-release-2-3$(rpm --eval "%{dist}").noarch.rpm
+        creates: /etc/yum.repos.d/zfs.repo
+
+  - name: "Install zfs"
+    dnf:
+      name: zfs-testing
+      state: latest
+
+  - name: "Load kernel module"
+    modprobe:
+      name: zfs
+      state: present
+      persistent: present
+
+  when: fileserver_data_filesystem == "zfs"
 
 - name: "Create groups"
   ipagroup:
