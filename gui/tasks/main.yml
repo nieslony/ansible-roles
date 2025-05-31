@@ -125,8 +125,8 @@
 
 - name: "Install Fedora extra packages: {{ gui_extra_themes | sort | join(', ') }}"
   dnf:
-    name: "{{ gui_rpm_packages_fedora }}"
-    exclude: "{{ exclude_packages }}"
+    name: "{{ gui_extra_themes }}"
+    exclude: "{{ gui_extra_themes_exclude }}"
     state: present
     nobest: true
     skip_broken: true

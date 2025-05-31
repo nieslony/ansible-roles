@@ -69,73 +69,13 @@ gui_rpm_packages:
   - xmlstarlet
 
 gui_extra_themes:
-  - adwaita-cursor-theme
-  - adwaita-qt5
-  - adwaita-qt6
-  - adwaita-blue-gtk-theme
-  - adwaita-gtk2-theme
-  - adwaita-icon-theme
-  - adwaita-qt5
-  - adwaita-qt6
-  - arc-theme
-  - arc-kde
-  - arc-theme-plank
-  - beefy-miracle-kde-theme
-  - bluebird-gtk2-theme
-  - bluebird-gtk3-theme
-  - bluebird-metacity-theme
-  - bluecurve-cursor-theme
-  - bluecurve-icon-theme
-  - candy-icon-theme
-  - cinnamon-themes
-  - clearlooks-compact-gnome-theme
-  - constantine-kde-theme
-  - constantine-backgrounds-extras
-  - constantine-backgrounds-extras-kde
-  - davfs2
-  - echo-icon-theme
-  - flat-remix-theme
-  - gnome-themes-extra
-  - goddard-kde-theme
-  - greybird-dark-theme
-  - greybird-light-theme
-  - human-theme-gtk
-  - la-capitaine-cursor-theme
-  - laughlin-kde-theme
-  - leonidas-kde-theme
-  - leonidas-kde-theme-landscape
-  - leonidas-kde-theme-lion
-  - libreoffice-icon-theme-papirus
-  - lovelock-kde-theme
-  - luv-icon-theme
-  - lxde-icon-theme
-  - lxqt-themes
-  - lxqt-themes-fedora
-  - mate-themes
-  - materia-gtk-theme
-  - mint-themes
-  - mint-y-theme
-  - moka-icon-theme
-  - numix-gtk-theme
-  - numix-icon-theme
-  - numix-icon-theme-circle
-  - numix-icon-theme-square
-  - oxygen-cursor-themes
-  - oxygen-icon-theme
-  - paper-icon-theme
-  - papirus-icon-theme
-  - pop-gnome-shell-theme
-  - pop-gtk2-theme
-  - pop-gtk3-theme
-  - pop-gtk4-theme
-  - sddm-themes
-  - solar-kde-theme
-  - sound-theme-freedesktop
-  - tango-icon-theme
-  - theme-switcher
-  - verne-kde-theme
-  - yaru-theme
-  - We10X-icon-theme
+    - "*cursor-theme*"
+    - "*gtk*-theme*"
+    - "*icon-theme*"
+    - "*kde-theme*"
+gui_extra_themes_exclude:
+    - "*devel"
+    - "mingw*"
 
 gui_rpm_packages_centos: "{{ gui_rpm_extra_packages_centos + gui_rpm_packages }}"
 gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages }}"
