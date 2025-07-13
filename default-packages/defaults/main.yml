@@ -25,4 +25,5 @@ default_packages:
     - rsync
     - tar
     - telnet
+    - tmux
     - usbutils
