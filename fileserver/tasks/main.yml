@@ -119,6 +119,8 @@
   notify: exportfs
 
 - name: "Create automount map {{ automount_map }} in location {{ automount_location }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipaautomountmap:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     location: "{{ automount_location }}"
@@ -128,6 +130,8 @@
   environment: "{{ env_ipa_on_server }}"
 
 - name: "Add automount map {{ automount_map }} to auto.master"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipaautomountkey:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     location: "{{ automount_location }}"
@@ -140,6 +144,8 @@
   environment: "{{ env_ipa_on_server }}"
 
 - name: "Create automount keys"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipaautomountkey:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     location: "{{ automount_location }}"

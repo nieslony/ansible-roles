@@ -131,6 +131,8 @@
     service_princs: "{{ vhost_aliases | difference([ansible_fqdn]) | map('regex_replace', '^', 'HTTP/') }}"
 
 - name: "Create service HTTP/{{ ansible_fqdn }} with additional service principals {{ service_princs }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipaservice:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "HTTP/{{ ansible_fqdn }}"

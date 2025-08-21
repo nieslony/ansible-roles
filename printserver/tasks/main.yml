@@ -136,6 +136,8 @@
   notify: restart_cups
 
 - name: "Create admin group {{ printserver_admin_group }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipagroup:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ printserver_admin_group }}"
