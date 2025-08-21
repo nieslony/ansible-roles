@@ -42,6 +42,8 @@
   when: system_volume_group is defined
 
 - name: "Create groups"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipagroup:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ item.group }}"
