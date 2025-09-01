@@ -155,6 +155,9 @@
     mode: 0600
 
 - name: "Get SSL certificate for webserver"
+  vars:
+    ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
+    ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
   command:
     cmd: >-
         ipa-getcert request
@@ -163,15 +166,13 @@
             --key-owner apache
             --cert-owner apache
             --principal HTTP/{{ ansible_fqdn }}
-            {%- for host in vhost_names -%}
-                {%- for dom in ipa_dns_domains -%}
-                    {%- if host.endswith("." + dom) %}
-                        --dns {{ host }}
-                    {%- endif -%}
-                {%- endfor -%}
-            {%- endfor %}
+            --dns {{ item }}
+            {%- if item != ansible_fqdn %}
+            --dns {{ ansible_fqdn }}
+            {% endif %}
             --wait
     creates: "{{ ssl_cert_file }}"
+  with_items: "{{ vhosts_internal }}"
   environment: "{{ env_ipa_on_host }}"
   notify: restart_httpd
 
@@ -182,10 +183,13 @@
   notify: restart_httpd
 
 - name: Copy vhost configuration files
+  vars:
+    ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
+    ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
   template:
     src: vhost.conf
     dest: "/etc/httpd/conf.d/{{ item }}.conf"
-  loop: "{{ vhost_names }}"
+  with_items: "{{ vhost_names }}"
   notify: restart_httpd
 
 - name: "Create vhost include folders"
