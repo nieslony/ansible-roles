@@ -1,6 +1,6 @@
 - name: "postfix : Configure postfix"
   command: "postconf -e '{{ item.key }} = {{ item.value | join(', ') if item.value is not string else item.value }}'"
-  loop: "{{ main_cfg_opts | dict2items }}"
+  loop: "{{ postfix_main_cfg_opts | dict2items }}"
   changed_when: false
 
 - name: "postfix : Enable submission service"
@@ -9,8 +9,8 @@
         postconf -Me submission/inet='
         submission inet n - n - - smtpd -v -o
         {{
-            master_cfg_opts.submission_inet.keys()
-                | zip(master_cfg_opts.submission_inet.values())
+            postfix_master_cfg_opts.submission_inet.keys()
+                | zip(postfix_master_cfg_opts.submission_inet.values())
                 | map('join', '=')
                 | join(' -o ')
         }}

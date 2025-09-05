@@ -51,7 +51,7 @@
     opts:
       mailbox_transport: cyrus
       cyrus_destination_recipient_limit: 1
-      relay_domains: "{{ mail_domain }}"
+      relay_domains: "{{ mailserver_mail_domain }}"
 
 - name: "cyrus-imapd : Create services"
   ipaservice:

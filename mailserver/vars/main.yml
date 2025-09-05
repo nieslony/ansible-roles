@@ -1,0 +1,90 @@
+
+myhostname: "{{ ansible_fqdn }}"
+
+logical_volumes:
+  - { name: "var",            create: no,  size: "4G", mount_point: /var }
+  - { name: "var_spool_imap", create: yes, size: "5G", mount_point: /var/spool/imap }
+  - { name: "var_lib_imap",   create: yes, size: "2G", mount_point: /var/lib/imap }
+  - { name: "var_lib_mysql",  create: yes, size: "4G", mount_point: /var/lib/mysql }
+
+postfix_master_cfg_opts:
+    submission_inet:
+        syslog_name: "postfix/submission"
+        smtpd_tls_security_level: "encrypt"
+        smtpd_tls_loglevel: "1"
+        smtpd_sasl_authenticated_header: "yes"
+        smtpd_sasl_auth_enable: "yes"
+        smtpd_client_restrictions: permit_sasl_authenticated,reject
+
+postfix_main_cfg_opts:
+    myhostname: "{{ myhostname }}"
+    mydomain: "{{ mailserver_mail_domain }}"
+    mydestination:
+      - "$myhostname"
+      - "$mydomain"
+    inet_interfaces: "all"
+    smtpd_sasl_response_limit: "65536"
+    line_length_limit: "65536"
+    import_environment:
+      - KRB5_KTNAME=/etc/postfix/krb5.keytab
+      - KRB5_CLIENT_KTNAME=/etc/postfix/krb5.keytab
+    virtual_alias_maps:
+      - "ldap:/etc/postfix/virtual_ldap"
+
+packages_common:
+    - cyrus-sasl
+    - cyrus-sasl-gssapi
+    - cyrus-sasl-plain
+    - python3-urllib-gssapi
+
+packages_amavis:
+    - amavis
+    - arj
+    - bzip2
+    - certbot
+    - clamav
+    - clamav-data
+    - clamav-lib
+    - clamav-update
+    - cpio
+    - file
+    - gzip
+    - lrzsz
+    - lz4
+    - lzip
+    - lzop
+    - nomarch
+    - p7zip
+    - perl-Getopt-Long
+    - unrar
+    - unzip
+    - zip
+
+packages_cyrus_imapd:
+    - cyrus-imapd
+    - cyrus-imapd-utils
+
+packages_postfix:
+    - opendkim
+    - postfix
+    - postfix-ldap
+
+spf_dkim_packages:
+    - opendkim
+    - opendkim-tools
+    - perl-Getopt-Long
+    - pypolicyd-spf
+
+imapd_conf_opts:
+    sasl_keytab: "/etc/cyrus-krb5.keytab"
+    sasl_mech_list: "gssapi plain login"
+    autocreate_inbox_folders: "Sent|Drafts|Junk|Archives|Trash"
+    autocreate_subscribe_folders: "Sent|Drafts|Junk|Archives|Trash"
+    autocreate_post: "1"
+    autocreate_quota: "1048576"
+    serverinfo: "off"
+    xlist-archive: "Archives"
+    xlist-drafts: "Drafts"
+    xlist-junk: "Junk"
+    xlist-sent: "Sent"
+    xlist-trash: "Trash"

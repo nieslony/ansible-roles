@@ -49,13 +49,11 @@ galaxy_info:
 
 dependencies:
     - role: fail2ban
-    - role: fail2ban
       vars:
         fail2ban_services: ['postfix', 'cyrus-imap']
     - role: webserver
       vars:
         webserver_vhosts:
-          - { name: "{{ mail_cloud_fqdn}}", size_gb: "10" }
           - "{{ mail_autodiscover_fqdn }}"
           - "{{ ansible_fqdn }}"
 
@@ -65,7 +63,6 @@ dependencies:
                 - "imap/{{ ansible_fqdn }}"
         webserver_constrained_delegation_rule: mail-delegation-rule
 
-        webserver_lvm_volsize_gb: 10
         webserver_enable_constrained_delegation: yes
   # List your role dependencies here, one per line. Be sure to remove the '[]' above,
   # if you add dependencies to this list.
