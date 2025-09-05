@@ -1,0 +1,31 @@
+---
+# defaults file for nextcloud
+nextcloud_release: 31
+
+nextcloud_admin_user: nc-admin
+nextcloud_admin_displayname: "Nextcloud Administrator"
+nextcloud_admin_password: "AdminPassword.1"
+
+nextcloud_install_apps:
+    - announcementcenter
+    - calendar
+    - contacts
+    - deck
+    - files_accesscontrol
+    - files_automatedtagging
+    - files_retention
+    - forms
+    - groupfolders
+    - mail
+    - notes
+    - richdocuments
+    - richdocumentscode
+    - secrets
+    - spreed
+    - tasks
+    - user_saml
+nextcloud_enable_apps:
+    - admin_audit
+    - files_external
+    - twofactor_totp
+    - user_ldap
