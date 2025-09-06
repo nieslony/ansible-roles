@@ -3,12 +3,12 @@
 # https://nextcloud-mail.readthedocs.io/en/v0.18.0/admin/
 
 - block:
-  - name: "Find foreman repo list"
+  - name: "Find remi.repo"
     stat:
       path: /etc/yum.repos.d/remi.repo
     register: stat_remi_repo
 
-  - name: "nextcloud : Add PHP remi repo"
+  - name: "Add PHP remi repo"
     dnf:
       name: "{{ php_remi_repo }}"
       disable_gpg_check: yes
@@ -17,27 +17,27 @@
       - not stat_remi_repo.stat.exists
   when: foreman['organization'] is not defined
 
-- name: "nextcloud : Find remi module"
+- name: "Find remi module"
   shell: 'dnf module list --enabled | grep -q "php *remi-{{ php_remi_release }}"'
   register: find_remi_module
   changed_when: no
   ignore_errors: yes
 
-- name: "nextcloud : Install php remi {{ php_remi_release }}"
+- name: "Install php remi {{ php_remi_release }}"
   command: "dnf -y module enable php:remi-{{ php_remi_release }}"
   when: find_remi_module.rc != 0
 
-- name: "nextcloud : Install packages {{ packages_nextcloud | join(', ') }}"
+- name: "Install packages {{ packages_nextcloud | join(', ') }}"
   dnf:
     name: "{{ packages_nextcloud }}"
     state: latest
 
-- name: "nextcloud : setfcontext for {{ nextcloud_folder }}"
+- name: "setfcontext for {{ nextcloud_folder }}"
   sefcontext:
     target: "{{ nextcloud_folder }}(/.*)"
     setype: httpd_sys_content_t
 
-- name: "nextcloud setfcontext for {{ nextcloud_folder}}'s subfolders"
+- name: "setfcontext for {{ nextcloud_folder}}'s subfolders"
   sefcontext:
     target: "{{ item }}"
     setype: httpd_sys_rw_content_t
@@ -50,13 +50,13 @@
     - '{{ nextcloud_folder }}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
   notify: relabel_nextcloud
 
-- name: "nextcloud : Create nextcloud folder"
+- name: "Create nextcloud folder"
   stat:
     path: "{{ nextcloud_occ }}"
   register: stat_nextcloud
   changed_when: no
 
-- name: "nextcloud : Create email users {{ nextcloud_ipa_users.keys() | list }}"
+- name: "Create email users {{ nextcloud_ipa_users.keys() | list }}"
   ipauser:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ item.value.name }}"
@@ -71,25 +71,25 @@
   become: no
   environment: "{{ env_ipa_on_server }}"
 
-- name: "nextcloud : Download and install software"
+- name: "Download and install software"
   block:
-    - name: "nextcloud : Download software"
+    - name: "Download software"
       get_url:
         url: https://download.nextcloud.com/server/releases/latest-{{ nextcloud_release }}.zip
         dest: /tmp
 
-    - name: "nextcloud : Unpack software"
+    - name: "Unpack software"
       unarchive:
         src: /tmp/latest-{{ nextcloud_release }}.zip
         dest: "{{ (nextcloud_folder | split('/'))[:-1] | join('/')}}"
         remote_src: yes
 
-    - name: "nextcloud : Remove tmp file"
+    - name: "Remove tmp file"
       file:
         name: /tmp/latest-{{ nextcloud_release }}.zip
         state: absent
 
-    - name: "nextcloud : chown apache"
+    - name: "chown apache"
       file:
         name: "{{ nextcloud_folder }}"
         owner: apache
@@ -97,7 +97,7 @@
         recurse: yes
   when: not stat_nextcloud.stat.exists
 
-- name: "nextcloud : configure php.ini"
+- name: "configure php.ini"
   vars:
     settings:
       expose_php: "Off"
@@ -112,7 +112,7 @@
     value: "{{ item.value | string }}"
   loop: "{{ settings | dict2items }}"
 
-- name: "nextcloud : configure php.d/10-opcache.ini"
+- name: "configure php.d/10-opcache.ini"
   ini_file:
     path: /etc/php.d/10-opcache.ini
     section:
@@ -125,7 +125,7 @@
     option: "apc.enable_cli"
     value: "1"
 
-- name: "nextcloud : Start services"
+- name: "Start services"
   service:
     name: "{{ item }}"
     enabled: yes
@@ -135,7 +135,7 @@
     - php-fpm
     - redis
 
-- name: "nextcloud : Set some selinux boleans => On"
+- name: "Set some selinux booleans => On"
   seboolean:
     name: "{{ item }}"
     state: yes
@@ -144,87 +144,90 @@
     - httpd_can_network_connect
     - httpd_unified
 
-- name: "nextcloud : Create database"
+- name: "Create database"
   mysql_db:
-    name: nextcloud
+    name: "{{ nextcloud_db_name }}"
 
-- name: "nextcloud : Create DB user"
+- name: "Create DB user"
   mysql_user:
-    name: nextcloud
+    name: "{{ nextcloud_db_user }}"
     priv: "nextcloud.*:ALL"
-    password: "{{ roundcube_password }}"
+    password: "{{ nextcloud_db_password }}"
 
-- name: "nextcloud : Make occ executable"
+- name: "Make occ executable"
   file:
     path: "{{ nextcloud_occ }}"
     mode: 0755
 
-- name: "nextcloud : copy apache config"
+- name: "copy apache config"
   template:
     src: nextcloud.conf
-    dest: /etc/httpd/conf.d/{{ mail_cloud_fqdn }}.conf.inc
+    dest: /etc/httpd/conf.d/{{ nextcloud_fqdn }}.conf.inc
   notify: restart_httpd
 
-- name: "nextcloud : Setup nextcloud with occ"
+- name: "Setup nextcloud with occ"
   become: yes
   become_user: apache
   command:
     cmd: >-
         {{ nextcloud_occ }} maintenance:install
             --database=mysql
-            --database-name=nextcloud
+            --database-name={{ nextcloud_db_name }}
             --database-host=localhost
-            --database-user=nextcloud
-            --database-pass={{ roundcube_password }}
+            --database-user={{ nextcloud_db_user }}
+            --database-pass={{ nextcloud_db_password }}
             --admin-user={{ nextcloud_admin_user }}
             --admin-pass={{ nextcloud_admin_password }}
             --data-dir={{ nextcloud_folder }}/data
     creates: "{{ nextcloud_folder }}/config/config.php"
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
-- name: "nextcloud : config system"
+- name: "config system"
   become: yes
   become_user: apache
-  command: |-
+  command: >-
     {{ nextcloud_occ }}
-    config:system:set
-    {{ item.key }}
-    {{ item.type is defined | ternary(item.type, "") }}
-    --value='{{ item.value }}'
+        config:system:set
+        {{ item.key }}
+        {{ item.type is defined | ternary(item.type, "") }}
+        --value='{{ item.value }}'
   with_items: "{{ nextcloud_system_config }}"
 
-- name: "nextcloud : setup crontab"
+- name: "setup crontab"
   cron:
     name: nextcloud
     user: apache
     job: "php -f {{ nextcloud_folder }}/cron.php"
     minute: "*/5"
 
-- name: "nextcloud : Update .htaccess"
+- name: "Update .htaccess"
   copy:
     src: nextcloud_htaccess
     dest: "{{ nextcloud_folder }}/.htaccess"
 
-- name: "nextcloud : create symlink ocm-provider"
+- name: "create symlink ocm-provider"
   file:
     path: "{{ nextcloud_folder }}/ocm-provider"
     src: "{{ nextcloud_folder }}/ocs-provider"
     state: link
 
-- name: "nextcloud : Get admin's display name"
+- name: "Get admin's display name"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} user:setting nc-admin settings display_name"
   register: admin_displayname
   changed_when: no
 
-- name: "nextcloud : Set admin's display name"
+- name: "Set admin's display name"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_admin_displayname }}'"
+  command: >-
+    {{ nextcloud_occ }}
+        user:setting {{ nextcloud_admin_user }}
+        settings display_name '{{ nextcloud_admin_displayname }}'
   when: admin_displayname.stdout != nextcloud_admin_displayname
 
-- name: "nextcloud : Get admin's email address"
+- name: "Get admin's email address"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} user:setting nc-admin settings email"
@@ -232,20 +235,23 @@
   changed_when: no
   ignore_errors: yes
 
-- name: "nextcloud : Set admin's email address"
+- name: "Set admin's email address"
   become: yes
   become_user: apache
-  command: "{{ nextcloud_occ }} user:setting {{ nextcloud_admin_user }} settings display_name '{{ nextcloud_ipa_users.mail.mail }}'"
+  command: >-
+    {{ nextcloud_occ }}
+        user:setting {{ nextcloud_admin_user }}
+        settings display_name '{{ nextcloud_ipa_users.mail.mail }}'
   when: admin_email.stdout != nextcloud_ipa_users.mail.mail
 
-- name: "nextcloud : Find installed apps"
+- name: "Find installed apps"
   find:
     recurse: no
     paths: "{{ nextcloud_folder }}/apps"
     file_type: directory
   register: installed_apps
 
-- name: "nextcloud : get installed apps"
+- name: "get installed apps"
   set_fact:
     installed_apps: >-
         {{
@@ -255,38 +261,38 @@
             | map('regex_replace', '^.*/', '')
         }}
 
-- name: "nextcloud : Install apps"
+- name: "Install apps"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} app:install {{ item }}"
   with_items: "{{ nextcloud_install_apps }}"
   when: not item in installed_apps
 
-- name: "nextcloud : Enable apps"
+- name: "Enable apps"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} app:enable {{ item }}"
   with_items: "{{ nextcloud_enable_apps }}"
 
-- name: "nextcloud : Configure app core"
+- name: "Configure app core"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} config:app:set --value={{ item.value }} core {{ item.key }}"
   with_items:
     - { key: backgroundjobs_mode, value: cron }
 
-- name: "nextcloud : Configure app user_saml"
+- name: "Configure app user_saml"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} saml:config:set --general-uid_mapping REMOTE_USER 1"
 
-- name: "nextcloud : Configure app user_saml (2)"
+- name: "Configure app user_saml (2)"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} config:app:set user_saml {{ item.key}} --value {{ item.value }}"
   with_items: "{{ nextcloud_user_saml_config | dict2items }}"
 
-- name: "nextcloud : Find ldap config"
+- name: "Find ldap config"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:show-config --output=json --show-password"
@@ -296,13 +302,13 @@
 - set_fact:
     current_ldap_config: "{{ nc_ldap_config.stdout | from_json }}"
 
-- name: "nextcloud : Create ldap config"
+- name: "Create ldap config"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:create-empty-config"
   when: nc_ldap_config.stdout | from_json | length == 0
 
-- name: "nextcloud : Configure app user_ldap"
+- name: "Configure app user_ldap"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:set-config s01 {{ item.key }} '{{ item.value }}'"
@@ -314,24 +320,24 @@
     or
     current_ldap_config.s01[item.key] != item.value
 
-- name: "nextcloud : Test app user_ldap"
+- name: "Test app user_ldap"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:test-config s01"
 
-- name: "nextcloud : Install fail2ban filter"
+- name: "Install fail2ban filter"
   copy:
     src: nextcloud.conf
     dest: /etc/fail2ban/filter.d
   notify: restart_fail2ban
 
-- name: "nextclizud : Install nextcloud.local"
+- name: "Install nextcloud.local"
   template:
     src: nextcloud.local
     dest: /etc/fail2ban/jail.d
   notify: restart_fail2ban
 
-- name: "nextcloud : copy nextcloud.te"
+- name: "copy nextcloud.te"
   copy:
     src: nextcloud.te
     dest: /var/local/selinux-modules

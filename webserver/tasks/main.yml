@@ -5,14 +5,6 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: "Build vhost_names from {{ webserver_vhosts }}"
-  set_fact:
-    vhost_names: "{{ (vhost_names is defined) | ternary(vhost_names, []) + [ (item is string) | ternary(item, item.name) ] }}"
-  loop: "{{ webserver_vhosts }}"
-
-- set_fact:
-    vhost_aliases: "{{ vhost_names | difference([ansible_fqdn]) }}"
-
 - name: "Create logical volume for /var/www"
   block:
     - name: "Create volume {{ lvm_volume }} with size {{ webserver_lvm_volsize_gb }}GB"
