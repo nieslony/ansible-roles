@@ -34,7 +34,7 @@
         state: mounted
   when: webserver_lvm_volsize_gb > 0 and system_volume_group is defined
 
-- name: Create document root for vhosts
+- name: "Create document root for vhosts"
   file:
     path: "/var/www/html/{{ item }}"
     state: directory
@@ -86,7 +86,7 @@
     shell: /sbin/nologin
     system: yes
 
-- name: Chown document root for vhosts
+- name: "Chown document root for vhosts"
   file:
     path: "/var/www/html/{{ item }}"
     state: directory
@@ -99,6 +99,8 @@
   loop: "{{ vhost_names }}"
 
 - name: "Create host objects for vhosts {{ vhost_names }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipahost:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     fqdn: "{{ item }}"
@@ -114,6 +116,8 @@
   environment: "{{ env_ipa_on_server }}"
 
 - name: "Create CNAMES for vhost {{ vhost_names }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipadnsrecord:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     zone_name: "{{ item.split('.')[1:] | join('.') }}"
@@ -184,9 +188,9 @@
     letsencrypt_cert_dest: "/etc/pki/tls/certs/{{ item }}.crt"
     letsencrypt_vhosts:
       - "{{ item }}"
-   with_items: "{{ vhosts_external }}"
+  with_items: "{{ vhosts_external }}"
 
-- name: Copy default_vhost.conf
+- name: "Copy default_vhost.conf"
   copy:
     src: default_vhost.conf
     dest: /etc/httpd/conf.d/default_vhost.conf
