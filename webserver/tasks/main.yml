@@ -154,7 +154,7 @@
     owner: apache
     mode: 0600
 
-- name: "Get SSL certificate for webserver"
+- name: "Get internal SSL certificates for webserver"
   vars:
     ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
     ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
@@ -175,6 +175,16 @@
   with_items: "{{ vhosts_internal }}"
   environment: "{{ env_ipa_on_host }}"
   notify: restart_httpd
+
+- name: "Get external SSL certificates for webserver"
+  include_role:
+    name: letsencrypt
+  vars:
+    letsencrypt_key_dest: "/etc/pki/tls/private/{{ item }}.key"
+    letsencrypt_cert_dest: "/etc/pki/tls/certs/{{ item }}.crt"
+    letsencrypt_vhosts:
+      - "{{ item }}"
+   with_items: "{{ vhosts_external }}"
 
 - name: Copy default_vhost.conf
   copy:

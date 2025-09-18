@@ -1,0 +1,148 @@
+---
+# tasks file for letsencrypt
+
+- name: "Set acme directory"
+  set_fact:
+    acme_directory: >-
+      {%- if letsencrypt_directory == "staging" -%}
+      https://acme-staging-v02.api.letsencrypt.org/directory
+      {%- elif letsencrypt_directory == "production" -%}
+      https://acme-v02.api.letsencrypt.org/directory
+      {%- else -%}
+      {%- endif -%}
+
+- fail:
+      msg: "Invalid value for letsencrypt_directory: '{{ letsencrypt_directory }}'"
+  when: acme_directory | length == 0
+
+- name: "Install packages"
+  dnf:
+    name:
+      - certbot
+      - certbot-apache
+      - httpd
+    state: latest
+
+- name: "Create vhost folders"
+  file:
+    path: "/var/www/html/{{ item }}"
+    state: directory
+  with_items: "{{ letsencrypt_vhosts }}"
+
+- name: "Install dummy index.html"
+  copy:
+    dest: "/var/www/html/{{ item }}/index.html"
+    content: |
+      <html>
+        <head>
+          <title>Welcome!</title>
+        </head>
+        <body>
+          Welcome!
+        </body>
+      </html>
+    force: no
+  with_items: "{{ letsencrypt_vhosts }}"
+
+- name: "Install vhost config"
+  copy:
+    dest: "/etc/httpd/conf.d/{{ item }}.conf"
+    content: |
+      <VirtualHost *:80>
+          DocumentRoot /var/www/html/{{ item }}
+          ServerName {{ item }}
+
+          <Directory /var/www/html/{{ item }}>
+              AllowOverride All
+          </Directory>
+      </VirtualHost>
+    force: no
+  with_items: "{{ letsencrypt_vhosts }}"
+
+- name: "Start Apache"
+  service:
+    name: httpd
+    enabled: yes
+    state: started
+
+- name: "Allow HTTP in firewall"
+  firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  with_items:
+    - http
+    - https
+
+- name: "Create certificates from {{ acme_directory }}"
+  command:
+    cmd: >-
+      certbot
+      run
+      --apache
+      {% for vh in letsencrypt_vhosts -%}
+      --domain {{ vh }}
+      {% endfor -%}
+      --agree-tos
+      {% if (letsencrypt_acme_email is string) and (letsencrypt_acme_email | length > 0) %}
+      --email {{ letsencrypt_acme_email }}
+      {%- else -%}
+      --register-unsafely-without-email
+      {%- endif %}
+      --server {{ acme_directory }}
+    creates: "/etc/letsencrypt/archive/{{ letsencrypt_vhosts[0] }}/privkey1.pem"
+  register: create_certs
+
+- name: "Install renew hook"
+  copy:
+    dest: /etc/letsencrypt/renewal-hooks/post/copy-acl-from-key.sh
+    content: |
+      #!/bin/bash
+
+      for dom in $RENEWED_DOMAINS ; do
+        last_key="$( ls /etc/letsencrypt/archive/$dom/privkey* -rt | tail -2 | head -1 )"
+        newest_key="$( ls /etc/letsencrypt/archive/$dom/privkey* -t | head -1 )"
+
+        echo "Copy ACLs from $last_key to $newest_key"
+
+        getfacl --absolute-names $last_key | setfacl --set-file=- $newest_key
+      done
+
+    mode: 0775
+
+- name: "Grant read access for folders"
+  vars:
+    folders:
+      - /etc/letsencrypt/archive
+      - /etc/letsencrypt/live
+  acl:
+    path: "{{ item[1] }}"
+    entity: "{{ item[0] }}"
+    etype: user
+    permissions: rx
+    state: present
+  with_list: "{{ letsencrypt_cert_readers | product(folders) }}"
+
+- name: "Grant read access to private key"
+  acl:
+    path: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/privkey.pem"
+    entity: "{{ item }}"
+    etype: user
+    permissions: r
+    state: present
+  with_items: "{{ letsencrypt_cert_readers }}"
+
+- name: "Create symling for private key to {{ letsencrypt_key_dest }}"
+  file:
+    path: "{{ letsencrypt_key_dest }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/privkey.pem"
+    state: link
+  when: letsencrypt_key_dest is string
+
+- name: "Create symling for certificate to {{ letsencrypt_cert_dest }}"
+  file:
+    path: "{{ letsencrypt_cert_dest }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/cert.pem"
+    state: link
+  when: letsencrypt_cert_dest is string
