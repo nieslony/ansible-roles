@@ -12,6 +12,11 @@ nextcloud_admin_password: "AdminPassword.1"
 
 nextcloud_fqdn: "cloud.{{ ansible_domain }}"
 
+nextcloud_require_krb:
+    - '192.168.0.0/16'
+    - '172.16.0.0/12'
+    - '10.0.248.0/24'
+
 nextcloud_install_apps:
     - announcementcenter
     - calendar
