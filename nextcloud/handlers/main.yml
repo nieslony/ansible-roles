@@ -21,3 +21,9 @@
     name: fail2ban
     state: restarted
   listen: selinux_module_nextcloud
+
+- name: Restart coolwsd
+  service:
+    name: coolwsd
+    state: restarted
+  listen: restart_coolwsd

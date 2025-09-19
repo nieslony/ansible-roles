@@ -13,6 +13,8 @@ php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
 php_remi_release: "8.3"
 
 packages_nextcloud:
+    - CODE-brand
+    - coolwsd
     - bash-completion
     - bzip2
     - curl
@@ -46,6 +48,7 @@ packages_nextcloud:
     - php-xml
     - php-zip
     - policycoreutils-python-utils
+    - python3-lxml
     - python3-mysqlclient
     - redis
     - unzip
@@ -159,3 +162,14 @@ nextcloud_ldap_config:
     ldapUserFilterMode: "0"
     ldapUserFilterObjectclass: person
     ldapUserfilterGroups: ""
+
+coolwsd_ssl_dir: /etc/pki/coolwsd
+coolwsd_ssl_cert: "{{ coolwsd_ssl_dir }}/{{ nextcloud_fqdn }}.crt"
+coolwsd_ssl_key: "{{ coolwsd_ssl_dir }}/{{ nextcloud_fqdn }}.key"
+
+coolwsd_config:
+    ssl.cert_file_path: "{{ coolwsd_ssl_cert }}"
+    ssl.key_file_path: "{{ coolwsd_ssl_key }}"
+    ssl.ca_file_path: "/etc/ipa/ca.crt"
+    storage.wopi.host: "{{ nextcloud_fqdn }}"
+    logging.level: information

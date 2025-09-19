@@ -15,6 +15,17 @@
     when:
       - php_remi_repo != ""
       - not stat_remi_repo.stat.exists
+
+  - name: "Add Collabora rpm key"
+    rpm_key:
+      state: present
+      key: https://www.collaboraoffice.com/repos/CollaboraOnline/CODE-rpm/repodata/repomd.xml.key
+
+  - name: "Add Collabora repo"
+    yum_repository:
+      name: collabora-online
+      baseurl: https://www.collaboraoffice.com/repos/CollaboraOnline/CODE-rpm
+      description: "Collabora Online Development Edition"
   when: foreman['organization'] is not defined
 
 - name: "Find remi module"
@@ -50,7 +61,7 @@
     - '{{ nextcloud_folder }}/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
   notify: relabel_nextcloud
 
-- name: "Create nextcloud folder"
+- name: "Create nextcloud folder {{ nextcloud_occ }}"
   stat:
     path: "{{ nextcloud_occ }}"
   register: stat_nextcloud
@@ -125,6 +136,34 @@
     option: "apc.enable_cli"
     value: "1"
 
+- name: "Create folder {{ coolwsd_ssl_dir }}"
+  file:
+    path: "{{ coolwsd_ssl_dir }}"
+    state: directory
+
+- name: "Get SSL certificate for coolwsd"
+  command:
+    cmd: >-
+        ipa-getcert request
+            --keyfile {{ coolwsd_ssl_key}}
+            --certfile {{ coolwsd_ssl_cert }}
+            --key-owner cool
+            --cert-owner cool
+            --principal HTTP/{{ ansible_fqdn }}
+            --dns {{ nextcloud_fqdn }}
+            --wait
+    creates: "{{ coolwsd_ssl_cert }}"
+  environment: "{{ env_ipa_on_host }}"
+  notify: restart_coolwsd
+
+- name: "Configure coolwsd"
+  xml:
+    path: /etc/coolwsd/coolwsd.xml
+    xpath: "/config/{{ item.key | replace('.','/') }}"
+    value: "{{ item.value }}"
+  with_dict: "{{ coolwsd_config }}"
+  notify: restart_coolwsd
+
 - name: "Start services"
   service:
     name: "{{ item }}"
@@ -134,6 +173,7 @@
     - mysqld
     - php-fpm
     - redis
+    - coolwsd
 
 - name: "Set some selinux booleans => On"
   seboolean:
