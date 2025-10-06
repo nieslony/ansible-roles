@@ -244,14 +244,14 @@
 
     - name: "Install whoami.conf"
       template:
-        src: whoami.conf
+        src: whoami-krb5.conf
         dest: "{{ whoami_folder }}"
       notify: restart_httpd
 
     - name: "Add webapp to vhosts"
       file:
-        src: "{{ whoami_folder }}/whoami.conf"
-        dest: "/etc/httpd/conf.d/{{ item }}.conf.inc.d/whoami.conf"
+        src: "{{ whoami_folder }}/whoami-krb5.conf"
+        dest: "/etc/httpd/conf.d/{{ item }}.conf.inc.d/whoami-krb5.conf"
         state: link
       loop: "{{ webserver_vhosts }}"
       notify: restart_httpd
