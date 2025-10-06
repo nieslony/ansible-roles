@@ -1,0 +1,17 @@
+[Unit]
+Description=Keycloak Identity Server
+After=network.target
+
+[Service]
+Type=simple
+User={{ keycloak_user }}
+Group={{ keycloak_user }}
+WorkingDirectory=/opt/keycloak
+#Environment="KEYCLOAK_ADMIN={{ keycloak_admin_user }}"
+#Environment="KEYCLOAK_ADMIN_PASSWORD={{ keycloak_admin_password }}"
+ExecStart=/opt/keycloak/bin/kc.sh start-dev --http-port={{ keycloak_port }} --hostname-strict=false
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

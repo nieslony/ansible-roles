@@ -1,3 +1,155 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for keycloak
+
+- name: "Install packages {{ packages | join(', ') }}"
+  dnf:
+    name: "{{ packages }}"
+    state: present
+
+- name: "Download and extraxt {{ keycloak_url }}"
+  unarchive:
+    remote_src: true
+    src: "{{ keycloak_url }}"
+    dest: "/opt"
+    creates: "{{ keycloak_home }}"
+  register: install_keycloak
+
+- name: "Symlink keycloak"
+  file:
+    src: "{{ keycloak_home }}"
+    dest: /opt/keycloak
+    state: link
+
+- name: "Create user {{ keycloak_user }}"
+  user:
+    name: "{{ keycloak_user }}"
+    shell: /bin/false
+    system: true
+    create_home: false
+    home: /
+
+- name: "Chown {{ keycloak_user }} {{ keycloak_home }}"
+  file:
+    dest: "{{ keycloak_home }}"
+    owner: keycloak
+    group: keycloak
+    recurse: yes
+
+- name: "Initialize PostgreSQL"
+  command:
+    cmd: postgresql-setup initdb
+    creates: /var/lib/pgsql/data/pg_hba.conf
+
+- name: "Start PostgreSQL"
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: "Configure access to postgres server"
+  postgresql_pg_hba:
+    dest: /var/lib/pgsql/data/pg_hba.conf
+    contype: host
+    users: "{{ keycloak_db_user }}"
+    address: localhost
+    method: password
+    databases: "{{ keycloak_db_name }}"
+
+- name: "Create DB user '{{ keycloak_db_user }}'"
+  postgresql_user:
+    name: "{{ keycloak_db_user }}"
+    password: "{{ keycloak_db_password }}"
+    encrypted: yes
+    role_attr_flags: NOSUPERUSER,NOCREATEDB,NOCREATEROLE
+  become: yes
+  become_user: postgres
+
+- name: "Create DB '{{ keycloak_db_name}}'"
+  postgresql_db:
+    name: "{{ keycloak_db_name }}"
+    owner: "{{ keycloak_db_user }}"
+  become: yes
+  become_user: postgres
+
+- name: "Install keycloak.service"
+  template:
+    src: keycloak.service
+    dest: /etc/systemd/system/keycloak.service
+
+- name: "Open port {{ keycloak_port }} in firewall"
+  firewalld:
+    port: "{{ keycloak_port }}/tcp"
+    permanent: yes
+    immediate: yes
+    state: enabled
+
+- block:
+  - name: "Configure keycloak"
+    become: yes
+    become_user: keycloak
+#        --http-relative-path {{ keycloak_relpath }}
+    command:
+      cmd: >-
+        ./bin/kc.sh build
+        --features {{ keycloak_features | join(',') }}
+        --db postgres
+      chdir: /opt/keycloak
+
+  - name: "Create bootstrap admin"
+    become: yes
+    become_user: keycloak
+    environment:
+      ADMIN_PWD: "{{ keycloak_admin_password }}"
+    command:
+      cmd: >-
+        ./bin/kc.sh  bootstrap-admin user
+        --password:env ADMIN_PWD
+        --username "{{ keycloak_tmp_admin_username }}"
+      chdir: /opt/keycloak
+
+  - name: "Start keycloak"
+    service:
+      name: keycloak
+      state: started
+      enabled: yes
+
+  - name: "Sleep 60 secs"
+    pause:
+      seconds: 60
+
+  - name: "Create permanent admin user {{ keycloak_admin_user }}"
+    community.general.keycloak_user:
+      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
+      auth_username: "{{ keycloak_tmp_admin_username }}"
+      auth_password: "{{ keycloak_admin_password }}"
+      auth_realm: master
+      realm: master
+      username: "{{ keycloak_admin_user }}"
+      enabled: yes
+      credentials:
+        - type: password
+          value: "{{ keycloak_admin_password }}"
+          temporary: false
+
+  - name: "Assign admin role to user {{ keycloak_admin_user }}"
+    community.general.keycloak_user_rolemapping:
+      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
+      auth_username: "{{ keycloak_tmp_admin_username }}"
+      auth_password: "{{ keycloak_admin_password }}"
+      auth_realm: master
+      target_username: "{{ keycloak_admin_user }}"
+      roles:
+        - name: admin
+      realm: master
+
+  - name: "Remove temp admin user {{ keycloak_tmp_admin_username }}"
+    community.general.keycloak_user:
+      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
+      auth_username: "{{ keycloak_admin_user }}"
+      auth_password: "{{ keycloak_admin_password }}"
+      auth_realm: master
+      realm: master
+      username: "{{ keycloak_tmp_admin_username }}"
+      state: absent
+  when: install_keycloak is changed

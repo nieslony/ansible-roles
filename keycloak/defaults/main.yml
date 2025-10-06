@@ -1,3 +1,15 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # defaults file for keycloak
+keycloak_version: "26.4.0"
+keycloak_user: keycloak
+keycloak_features:
+  - admin-api
+  - kerberos
+keycloak_relpath: "/keycloak"
+keycloak_port: 8180
+keycloak_admin_user: kc-admin
+keycloak_admin_password: "ahr0ShieMegu"
+keycloak_db_user: keycloak
+keycloak_db_password: "ahr0ShieMegu"
+keycloak_db_name: "keycloak"
