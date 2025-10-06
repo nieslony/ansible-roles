@@ -1,0 +1,11 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for keycloak
+packages:
+  - java
+  - postgresql-server
+  - python3-psycopg2
+keycloak_home: "/opt/keycloak-{{ keycloak_version }}"
+keycloak_url: "https://github.com/keycloak/keycloak/releases/download/{{ keycloak_version }}/keycloak-{{ keycloak_version }}.tar.gz"
+keycloak_tmp_admin_user: tmp-admin
+keycloak_admin_url: "http://localhost:{{ keycloak_port }}"
