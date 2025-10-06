@@ -1,6 +1,8 @@
 #SPDX-License-Identifier: MIT-0
 ---
 # tasks file for keycloak
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
 
 - name: "Install packages {{ packages | join(', ') }}"
   dnf:
@@ -88,7 +90,6 @@
   - name: "Configure keycloak"
     become: yes
     become_user: keycloak
-#        --http-relative-path {{ keycloak_relpath }}
     command:
       cmd: >-
         ./bin/kc.sh build
@@ -96,16 +97,20 @@
         --db postgres
       chdir: /opt/keycloak
 
+  - name: "Generate random password"
+    set_fact:
+      keycloak_tmp_admin_password: "{{ lookup('community.general.random_string', length=12, special=false) }}"
+
   - name: "Create bootstrap admin"
     become: yes
     become_user: keycloak
     environment:
-      ADMIN_PWD: "{{ keycloak_admin_password }}"
+      ADMIN_PWD: "{{ keycloak_tmp_admin_password }}"
     command:
       cmd: >-
         ./bin/kc.sh  bootstrap-admin user
         --password:env ADMIN_PWD
-        --username "{{ keycloak_tmp_admin_username }}"
+        --username {{ keycloak_tmp_admin_user }}
       chdir: /opt/keycloak
 
   - name: "Start keycloak"
@@ -120,9 +125,9 @@
 
   - name: "Create permanent admin user {{ keycloak_admin_user }}"
     community.general.keycloak_user:
-      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
-      auth_username: "{{ keycloak_tmp_admin_username }}"
-      auth_password: "{{ keycloak_admin_password }}"
+      auth_keycloak_url: "{{ keycloak_admin_url }}"
+      auth_username: "{{ keycloak_tmp_admin_user }}"
+      auth_password: "{{ keycloak_tmp_admin_password }}"
       auth_realm: master
       realm: master
       username: "{{ keycloak_admin_user }}"
@@ -132,24 +137,37 @@
           value: "{{ keycloak_admin_password }}"
           temporary: false
 
-  - name: "Assign admin role to user {{ keycloak_admin_user }}"
+  - name: "Assign admin role to user {{ keycloak_admin_user }} "
     community.general.keycloak_user_rolemapping:
-      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
-      auth_username: "{{ keycloak_tmp_admin_username }}"
-      auth_password: "{{ keycloak_admin_password }}"
+      auth_keycloak_url: "{{ keycloak_admin_url }}"
+      auth_username: "{{ keycloak_tmp_admin_user }}"
+      auth_password: "{{ keycloak_tmp_admin_password }}"
       auth_realm: master
       target_username: "{{ keycloak_admin_user }}"
       roles:
         - name: admin
       realm: master
 
-  - name: "Remove temp admin user {{ keycloak_tmp_admin_username }}"
+  - name: "Remove temp admin user {{ keycloak_tmp_admin_user }}"
     community.general.keycloak_user:
-      auth_keycloak_url: "http://localhost:{{ keycloak_port }}"
+      auth_keycloak_url: "{{ keycloak_admin_url }}"
       auth_username: "{{ keycloak_admin_user }}"
       auth_password: "{{ keycloak_admin_password }}"
       auth_realm: master
       realm: master
-      username: "{{ keycloak_tmp_admin_username }}"
+      username: "{{ keycloak_tmp_admin_user }}"
       state: absent
   when: install_keycloak is changed
+
+- name: "Create realm {{ keycloak_realm }}"
+  community.general.keycloak_realm:
+    auth_keycloak_url: "{{ keycloak_admin_url }}"
+    auth_username: "{{ keycloak_admin_user }}"
+    auth_password: "{{ keycloak_admin_password }}"
+    auth_realm: master
+    realm: "{{ keycloak_realm }}"
+    state: present
+  register: realm_info
+
+- debug:
+    var: realm_info
