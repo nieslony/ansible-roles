@@ -115,7 +115,7 @@
       max_execution_time: "360"
       max_input_time: "180"
       memory_limit: "-1"
-      upload_max_filesize: "1024MB"
+      upload_max_filesize: "1024M"
   ini_file:
     path: /etc/php.ini
     section: PHP
