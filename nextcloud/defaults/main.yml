@@ -1,6 +1,6 @@
 ---
 # defaults file for nextcloud
-nextcloud_release: 31
+nextcloud_release: 32
 
 nextcloud_db_name: nextcloud
 nextcloud_db_user: nextcloud
@@ -15,12 +15,14 @@ nextcloud_fqdn: "cloud.{{ ansible_domain }}"
 nextcloud_require_krb:
     - '192.168.0.0/16'
     - '172.16.0.0/12'
-    - '10.0.248.0/24'
+    - '10.0.0.0/24'
 
 nextcloud_install_apps:
     - announcementcenter
     - calendar
+    - calendar_resource_management
     - contacts
+    - cookbook
     - deck
     - files_accesscontrol
     - files_automatedtagging
@@ -29,11 +31,12 @@ nextcloud_install_apps:
     - groupfolders
     - mail
     - notes
+    - oidc
     - richdocuments
     - richdocumentscode
     - secrets
     - spreed
-    - tasks
+#    - tasks
     - user_saml
 
 nextcloud_enable_apps:
