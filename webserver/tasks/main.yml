@@ -125,7 +125,9 @@
     record_value: "{{ ansible_fqdn }}."
     name: "{{ item | split('.') | first }}"
   loop: "{{ vhost_names }}"
-  when: item != ansible_fqdn
+  when:
+    - item != ansible_fqdn
+    - item in vhosts_internal
   delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
   become: no
   environment: "{{ env_ipa_on_server }}"
