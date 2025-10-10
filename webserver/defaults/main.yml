@@ -21,3 +21,11 @@ webserver_infopipe_extra_attrs:
     - mail
     - givenname
     - sn
+
+webserver_oidc_enabled: false
+webserver_oidc_url:
+webserver_oidc_admin_user:
+webserver_oidc_admin_password:
+webserver_oidc_realm:  "{{ organization }}"
+webserver_oidc_client_id: "{{ ansible_fqdn }}"
+webserver_oidc_client_secret:

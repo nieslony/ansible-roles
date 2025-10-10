@@ -158,6 +158,18 @@
     owner: apache
     mode: 0600
 
+- block:
+  - name: "Create OpenID client"
+    community.general.keycloak_client:
+      auth_keycloak_url: "{{ webserver_oidc_url }}"
+      auth_realm: master
+      auth_username: "{{ webserver_oidc_admin_user }}"
+      auth_password: "{{ webserver_oidc_admin_password }}"
+      client_id: test
+      state: present
+      client_authenticator_type: client-secret
+  when: webserver_oidc_enabled
+
 - name: "Get internal SSL certificates for webserver"
   vars:
     ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"

@@ -5,6 +5,7 @@ krb_ccache_dir: /var/www/client_ccache
 packages:
     - httpd
     - mod_auth_gssapi
+    - mod_auth_openidc
     - mod_session
     - mod_ssl
     - python3-urllib-gssapi

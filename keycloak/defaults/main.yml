@@ -10,10 +10,10 @@ keycloak_features:
 keycloak_port: 8180
 
 keycloak_admin_user: kc-admin
-keycloak_admin_password: "ahr0ShieMegu"
+keycloak_admin_password: "ChangeMe"
 
 keycloak_db_user: keycloak
-keycloak_db_password: "ahr0ShieMegu"
+keycloak_db_password: "ChangeMe"
 keycloak_db_name: "keycloak"
 
 keycloak_realm: "{{ organization }}"
