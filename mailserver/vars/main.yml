@@ -1,5 +1,5 @@
 
-myhostname: "{{ ansible_fqdn }}"
+myhostname: "{{ mailserver_fqdn }}"
 
 logical_volumes:
   - { name: "var",            create: no,  size: "4G", mount_point: /var }
@@ -30,6 +30,8 @@ postfix_main_cfg_opts:
       - KRB5_CLIENT_KTNAME=/etc/postfix/krb5.keytab
     virtual_alias_maps:
       - "ldap:/etc/postfix/virtual_ldap"
+    smtpd_tls_cert_file: "{{ postfix_cert_file }}"
+    smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
 
 packages_common:
     - cyrus-sasl

@@ -34,4 +34,3 @@
     src: autoconfig.ini
     dest: /var/www/autoconfig
   notify: restart_httpd
-

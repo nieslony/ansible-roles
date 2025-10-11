@@ -21,48 +21,60 @@
     - "{{ cyrus_imapd_certs_folder }}"
     - "{{ webserver_certs_folder }}"
 
-- name: "certificates : Get SSL certificate for postfix"
-  command:
-    cmd: |
-        ipa-getcert request
-            --keyfile {{ postfix_cert_key_file }}
-            --certfile {{ postfix_cert_file }}
-            --key-owner postfix
-            --cert-owner postfix
-            --wait
-    creates: "{{ postfix_cert_file }}"
-  environment: "{{ env_ipa_on_host }}"
+- block:
+  - name: "certificates : Get internal SSL certificate for postfix"
+    command:
+      cmd: |
+          ipa-getcert request
+              --keyfile {{ postfix_cert_key_file }}
+              --certfile {{ postfix_cert_file }}
+              --key-owner postfix
+              --cert-owner postfix
+              --wait
+      creates: "{{ postfix_cert_file }}"
+    environment: "{{ env_ipa_on_host }}"
 
-- name: "certificates : Get SSL certificate for cyrus-imap"
-  command:
-    cmd: |
-        ipa-getcert request
-            --keyfile {{ cyrus_imapd_cert_key_file }}
-            --certfile {{ cyrus_imapd_cert_file }}
-            --key-owner cyrus
-            --cert-owner cyrus
-            --wait
-    creates: "{{ cyrus_imapd_cert_file }}"
-  environment: "{{ env_ipa_on_host }}"
+  - name: "certificates : Get internal SSL certificate for cyrus-imap"
+    command:
+      cmd: |
+          ipa-getcert request
+              --keyfile {{ cyrus_imapd_cert_key_file }}
+              --certfile {{ cyrus_imapd_cert_file }}
+              --key-owner cyrus
+              --cert-owner cyrus
+              --wait
+      creates: "{{ cyrus_imapd_cert_file }}"
+    environment: "{{ env_ipa_on_host }}"
 
-- name: "certificates : Enable certificates for postfix"
-  command: "postconf -e '{{ item.key }} = {{ item.value }}'"
-  loop: "{{ options | dict2items }}"
-  vars:
-    options:
-        smtpd_tls_cert_file: "{{ postfix_cert_file }}"
-        smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
-  changed_when: false
+  - name: "certificates : Symlink internal cert for cyrus-imapd"
+    file:
+      path: "{{ item.path }}"
+      src: "{{ item.src }}"
+      state: link
+    loop:
+      - path: /etc/pki/cyrus-imapd/cyrus-imapd.pem
+        src: "{{ cyrus_imapd_cert_file }}"
+      - path: /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
+        src: "{{ cyrus_imapd_cert_key_file }}"
+      - path: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+        src: "{{ ca_cert_file }}"
+  when: mailserver_fqdn == ansible_fqdn
 
-- name: "certificates : Symlink cert for cyrus-imapd"
-  file:
-    path: "{{ item.path }}"
-    src: "{{ item.src }}"
-    state: link
-  loop:
-    - path: /etc/pki/cyrus-imapd/cyrus-imapd.pem
-      src: "{{ cyrus_imapd_cert_file }}"
-    - path: /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
-      src: "{{ cyrus_imapd_cert_key_file }}"
-    - path: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
-      src: "{{ ca_cert_file }}"
+- block:
+  - name: "Get external SSL certificates for webserver"
+    include_role:
+      name: letsencrypt
+    vars:
+      letsencrypt_vhosts:
+        - "{{ mailserver_fqdn }}"
+      letsencrypt_cert_readers:
+        - postfix
+        - cyrus
+      letsencrypt_cert_dest:
+        - /etc/pki/cyrus-imapd/cyrus-imapd.pem
+        - "{{ postfix_cert_file }}"
+      letsencrypt_key_dest:
+        - /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
+        - "{{ postfix_key_file }}"
+      letsencrypt_ca_dest: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+  when: mailserver_fqdn != ansible_fqdn
