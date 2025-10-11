@@ -28,17 +28,42 @@
   template:
     src: "{{ item }}"
     dest: /usr/local/etc/evolution
-  loop:
-    - autoconf-caldav-nextcloud.source
-    - autoconf-carddav-nextcloud.source
-    - autoconf-carddav-system-nextcloud.source
+  with_items:
     - autoconf-identity.source
-    - autoconf-tasks-nextcloud.source
     - autoconf-transport.source
-    - autoconf.source
+    - autoconf-imap.source
     - local.source
     - system-calendar.source
-#    - autoconf-ldap-contacts.source
+
+- name: "Copy Evolution Calendar Sources"
+  template:
+    src: autoconf-caldav-nextcloud.source
+    dest: "/usr/local/etc/evolution/autoconf-caldav-nextcloud-{{ item.folder }}.source"
+  with_items:
+    - name: Personal
+      folder: personal
+      type: calendar
+      color: "#55aaff"
+    - name: Tasks
+      folder: tasks
+      type: tasks
+      color: "#f0e2ef"
+    - name: Birthdays
+      folder: contact_birthdays
+      type: calendar
+      color: "#aaff7f"
+
+- name: "Copy Evolution Addressbook Sources"
+  template:
+    src: autoconf-carddav-nextcloud.source
+    dest: "/usr/local/etc/evolution/autoconf-carddav-nextcloud-{{ item.folder | replace(' ', '_') }}.source"
+  with_items:
+    - name: Accounts
+      folder: z-server-generated--system
+    - name: Personal
+      folder: contacts
+    - name: Recently contacted
+      folder: z-app-generated--contactsinteraction--recent
 
 - name: Install create-nextcloud-folders.sh
   template:
