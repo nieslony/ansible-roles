@@ -18,3 +18,12 @@
       - skip_repo_backup is undefined
       - (repo_whitelist is undefined) or (not item.split("/") | last in repo_whitelist)
   when: foreman['organization'] is defined
+
+- name: "Install  python3-libdnf5"
+  dnf:
+    name: python3-libdnf5
+    use_backend: dnf4
+    state: latest
+  when:
+    - ansible_facts['distribution'] == "Fedora"
+    - ansible_facts['distribution_major_version'] >= 42

@@ -41,6 +41,9 @@ gui_rpm_extra_packages_fedora:
   - gnome-network-displays
   - nautilus-dropbox
   - dropbox
+  - gwenview
+  - okular
+  - krita
 
 gui_rpm_packages:
   - "@gnome-desktop"

@@ -1,0 +1,10 @@
+---
+# defaults file for letsencrypt
+
+letsencrypt_vhosts:
+    - "{{ ansible_fqdn }}"
+letsencrypt_directory: staging
+letsencrypt_acme_email:
+letsencrypt_cert_readers: []
+letsencrypt_cert_dest:
+letsencrypt_key_dest:
