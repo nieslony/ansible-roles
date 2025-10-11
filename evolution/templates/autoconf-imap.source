@@ -9,7 +9,7 @@ Parent=
 [Mail Account]
 BackendName=imapx
 IdentityUid=autoconf-identity
-ArchiveFolder=folder://autoconf/Archives
+ArchiveFolder=folder://autoconf-imap/Archives
 NeedsInitialSetup=false
 MarkSeen=inconsistent
 MarkSeenTimeout=1500

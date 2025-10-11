@@ -2,7 +2,7 @@
 Revision=1
 
 [Data Source]
-DisplayName={{ organization }}/Personal (${email})
+DisplayName={{ organization }}/{{ item.name }} (${email})
 Enabled=true
 Parent=carddav-stub
 
@@ -25,7 +25,7 @@ CalendarAutoSchedule=false
 Color=
 DisplayName=Contacts
 EmailAddress=
-ResourcePath=/nextcloud/remote.php/dav/addressbooks/users/${USER}/contacts/
+ResourcePath=/nextcloud/remote.php/dav/addressbooks/users/${USER}/{{ item.folder }}/
 ResourceQuery=
 SslTrust=
 Order=4294967295
