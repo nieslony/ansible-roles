@@ -1,30 +1,5 @@
 # defaults file for nextcloud
 mailserver_mail_domain: "{{ maildomain | default(ansible_domain) }}"
 
+mailserver_fqdn: "{{ ansible_fqdn }}"
 mail_autodiscover_fqdn: "autodiscover.{{ mailserver_mail_domain }}"
-
-# packages_roundcube:
-#     - mariadb-server
-#     - mod_auth_gssapi
-#     - mod_session
-#     - mod_ssl
-#     - php-bz2
-#     - php-common
-#     - php-curl
-#     - php-fpm
-#     - php-gd
-#     - php-gmp
-#     - php-imagick
-#     - php-intl
-#     - php-json
-#     - php-ldap
-#     - php-mbstring
-#     - php-mysqlnd
-#     - php-xml
-#     - php-zip
-#     - python3-mysqlclient
-#     - roundcubemail
-#
-# roundcube_password: "Heexeb0AHeiz7eca"
-#
-#
