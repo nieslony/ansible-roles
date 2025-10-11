@@ -26,4 +26,4 @@
     state: latest
   when:
     - ansible_facts['distribution'] == "Fedora"
-    - ansible_facts['distribution_major_version'] >= 42
+    - ansible_facts['distribution_major_version'] | int >= 42
