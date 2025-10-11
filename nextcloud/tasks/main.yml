@@ -68,7 +68,7 @@
   changed_when: no
 
 - name: "Create email users {{ nextcloud_ipa_users.keys() | list }}"
-  ipauser:
+  freeipa.ansible_freeipa.ipauser:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ item.value.name }}"
     password: "{{ item.value.password }}"
