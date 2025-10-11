@@ -26,7 +26,7 @@
         state: mounted
   when: webserver_lvm_volsize_gb > 0 and system_volume_group is defined
 
-- name: Create document root for vhosts
+- name: "Create document root for vhosts"
   file:
     path: "/var/www/html/{{ item }}"
     state: directory
@@ -78,7 +78,7 @@
     shell: /sbin/nologin
     system: yes
 
-- name: Chown document root for vhosts
+- name: "Chown document root for vhosts"
   file:
     path: "/var/www/html/{{ item }}"
     state: directory
@@ -91,6 +91,8 @@
   loop: "{{ vhost_names }}"
 
 - name: "Create host objects for vhosts {{ vhost_names }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipahost:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     fqdn: "{{ item }}"
@@ -106,6 +108,8 @@
   environment: "{{ env_ipa_on_server }}"
 
 - name: "Create CNAMES for vhost {{ vhost_names }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   ipadnsrecord:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     zone_name: "{{ item.split('.')[1:] | join('.') }}"
@@ -113,7 +117,9 @@
     record_value: "{{ ansible_fqdn }}."
     name: "{{ item | split('.') | first }}"
   loop: "{{ vhost_names }}"
-  when: item != ansible_fqdn
+  when:
+    - item != ansible_fqdn
+    - item in vhosts_internal
   delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
   become: no
   environment: "{{ env_ipa_on_server }}"
@@ -146,7 +152,7 @@
     owner: apache
     mode: 0600
 
-- name: "Get SSL certificate for webserver"
+- name: "Get internal SSL certificates for webserver"
   vars:
     ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
     ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
@@ -168,7 +174,17 @@
   environment: "{{ env_ipa_on_host }}"
   notify: restart_httpd
 
-- name: Copy default_vhost.conf
+- name: "Get external SSL certificates for webserver"
+  include_role:
+    name: letsencrypt
+  vars:
+    letsencrypt_key_dest: "/etc/pki/tls/private/{{ item }}.key"
+    letsencrypt_cert_dest: "/etc/pki/tls/certs/{{ item }}.crt"
+    letsencrypt_vhosts:
+      - "{{ item }}"
+  with_items: "{{ vhosts_external }}"
+
+- name: "Copy default_vhost.conf"
   copy:
     src: default_vhost.conf
     dest: /etc/httpd/conf.d/default_vhost.conf

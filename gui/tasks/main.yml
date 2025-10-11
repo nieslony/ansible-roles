@@ -211,8 +211,11 @@
   ini_file:
     path: /etc/accountsservice/user-templates/standard
     section: User
-    option: Session
-    value: plasma
+    option: "{{ item.key }}"
+    value: "{{ item.value }}"
+  with_dict:
+    Session: plasma
+    Icon: "/var/lib/AccountsService/icons/${USER}.jpg"
 
 - name: Is gdm running
   command: systemctl is-active gdm.service
@@ -306,18 +309,52 @@
         {%- endfor -%}
         {{ (gui_file_bookmarks + ns.bookmarks) | sort(attribute='name') }}
 
-- debug:
-    var: file_bookmarks
-
 - name: Install bashrc.d scripts
   template:
-    src: "patch_file_bookmarks.sh"
+    src: "{{ item }}"
     dest: /etc/profile.d
+    force: yes
+  with_items:
+    - patch_file_bookmarks.sh
+    - get-face-from-ldap.sh
 
-- name: Install patch_file_bookmarks.desktop
+- name: "Install xdg autostart files"
   copy:
-    src: patch_file_bookmarks.desktop
-    dest: /etc/xdg/autostart
+    content: |
+      [Desktop Entry]
+      Type=Application
+      Name={{ item.name }}
+      NoDisplay=true
+      Exec={{ item.exec }}
+    dest: "/etc/xdg/autostart/{{ item.filename }}"
+  with_items:
+    - name: Patch user-places.xbel
+      exec: bash /etc/profile.d/patch_file_bookmarks.sh -f -s 5
+      filename: patch_file_bookmarks.desktop
+    - name: "Get user face from LDAP"
+      exec: bash /etc/profile.d/get-face-from-ldap.sh
+      filename: get-face-from-ldap.desktop
+
+- name: "Create update-gdm-faces.sh"
+  copy:
+    content: |
+      for i in $( last --since yesterday | awk '/login/ { print $1; }' | sort -u ) ; do
+        FACE=$( eval echo ~$i/.face.icon )
+        if [ -e "$FACE" ]; then
+          cp -v $FACE /var/lib/AccountsService/icons/$i.jpg
+          chmod -v +r /var/lib/AccountsService/icons/$i.jpg
+        fi
+      done
+    dest: /usr/local/bin/update-gdm-faces.sh
+    mode: 0775
+
+- name: "Auto update user faces"
+  cron:
+    name: "Auto update user faces"
+    minute: "*/30"
+    user: root
+    job: /usr/local/bin/update-gdm-faces.sh
+    cron_file: update-gdm-faces
 
 - name: Find /boot/luks.pwd
   stat:

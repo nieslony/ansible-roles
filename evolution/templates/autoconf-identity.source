@@ -4,10 +4,10 @@ Revision=1
 [Data Source]
 DisplayName={{ organization }} (${email})
 Enabled=true
-Parent=autoconf
+Parent=autoconf-imap
 
 [Mail Submission]
-SentFolder=folder://autoconf/Sent
+SentFolder=folder://autoconf-imap/Sent
 TransportUid=autoconf-transport
 RepliesToOriginFolder=false
 UseSentFolder=true
@@ -15,10 +15,10 @@ UseSentFolder=true
 [Mail Composition]
 Bcc=
 Cc=
-DraftsFolder=folder://autoconf/Drafts
+DraftsFolder=folder://autoconf-imap/Drafts
 ReplyStyle=default
 SignImip=true
-TemplatesFolder=folder://autoconf/Templates
+TemplatesFolder=folder://autoconf-imap/Templates
 StartBottom=inconsistent
 TopSignature=inconsistent
 Language=

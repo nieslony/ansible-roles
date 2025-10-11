@@ -42,6 +42,10 @@ domain. The can be applied in _The Foreman_ or in a
 
 - [minidlna](minidlna/README.md) installs a media server with minidlna
 
+- [letsencrypt](letsencrypt/README.md) install nextcloud with some apps like
+
+  - talk
+
 - [printserver](printserver/README.md) installs a CUPS based print server with
   SSL certificates and Kerberos authentication
 
@@ -68,6 +72,8 @@ The following ansible collections are required:
  - ansible.utils
 
  - community.crypto
+ 
+ - community.dns
 
  - community.general
  

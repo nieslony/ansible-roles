@@ -2,7 +2,7 @@
 Revision=1
 
 [Data Source]
-DisplayName={{ organization }} (${email})
+DisplayName={{ organization }}/{{ item.name }} (${email})
 Enabled=true
 Parent=caldav-stub
 
@@ -29,14 +29,18 @@ CalendarAutoSchedule=false
 Color=
 DisplayName=
 EmailAddress=${email}
-ResourcePath=/nextcloud/remote.php/dav/calendars/${USER}/personal/
+ResourcePath=/nextcloud/remote.php/dav/calendars/${USER}/{{ item.folder }}/
 ResourceQuery=
 SslTrust=
 Order=4294967295
 
+{% if item.type == "calendar" %}
 [Calendar]
+{% elif item.type == "tasks" %}
+[Task List]
+{% endif %}
 BackendName=caldav
-Color=#f0e2ef
+Color={{ item.color }}
 Selected=true
 Order=0
 
