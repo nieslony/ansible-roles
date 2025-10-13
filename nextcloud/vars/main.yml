@@ -1,0 +1,175 @@
+---
+# vars file for nextcloud
+logical_volumes:
+  - name: "var_www_html_{{ mail_cloud_fqdn}}_nextcloud_data"
+    size: "10G"
+    mount_point: "{{ nextcloud_folder }}/data"
+    create: yes
+
+mailserver_mail_domain: "{{ maildomain | default(ansible_domain) }}"
+
+php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+
+php_remi_release: "8.3"
+
+packages_nextcloud:
+    - CODE-brand
+    - coolwsd
+    - bash-completion
+    - bzip2
+    - curl
+    - httpd
+    - httpd-tools
+    - mlocate
+    - mod_auth_gssapi
+    - mod_session
+    - mod_ssl
+    - mysql-server
+    - php-bcmath
+    - php-bz2
+    - php-cli
+    - php-common
+    - php-curl
+    - php-fpm
+    - php-gd
+    - php-gmp
+    - php-imagick
+    - php-intl
+    - php-json
+    - php-ldap
+    - php-mbstring
+    - php-mysqlnd
+    - php-opcache
+    - php-pecl-apcu
+    - php-pecl-redis
+    - php-process
+    - php-smbclient
+    - php-sodium
+    - php-xml
+    - php-zip
+    - policycoreutils-python-utils
+    - python3-lxml
+    - python3-mysqlclient
+    - redis
+    - unzip
+    - wget
+    - yum-utils
+    - python3-jmespath
+
+nextcloud_folder: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud"
+nextcloud_occ: "{{ nextcloud_folder }}/occ"
+
+nextcloud_user_saml_config:
+    general-require_provisioned_account: 1
+    type: environment-variable
+nextcloud_ipa_users:
+    mail:
+      name: mail-nextcloud
+      displayname: Nextcloud
+      password: ohnaChahr5eeshie
+      mail: "nextcloud@{{ mailserver_mail_domain }}"
+      givenname: Nextcloud
+      sn: Mail
+    ldap:
+      name: ldap-nextcloud
+      displayname: Nextcloud
+      password: ohnaChahr5eeshie
+      givenname: Nextcloud
+      sn: LDAP
+nextcloud_system_config:
+    - { key: "trusted_domains 1", value: "{{ mail_cloud_fqdn }}" }
+    - { key: "overwrite.cli.url", value: "https://{{ mail_cloud_fqdn }}/nextcloud" }
+    # - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
+    - { key: "memcache.local", value: '\OC\Memcache\APCu' }
+    - { key: "default_phone_region", value: "AT" }
+    - { key: "mail_from_address", value: "{{ nextcloud_ipa_users.mail.mail | split('@') | first }}" }
+    - { key: "mail_smtpmode", value: "smtp" }
+    - { key: "mail_sendmailmode", value: "smtp" }
+    - { key: "mail_domain", value: "{{ mailserver_mail_domain }}" }
+    - { key: "mail_smtphost", value: "{{ ansible_fqdn }}" }
+    - { key: "mail_smtpport", value: "587" }
+    - { key: "mail_smtpauth", value: "1" }
+    - { key: "mail_smtpname", value: "{{ nextcloud_ipa_users.mail.name }}" }
+    - { key: "mail_smtppassword", value: "{{ nextcloud_ipa_users.mail.password }}" }
+    - { key: "maintenance_window_start", value: 1, type: "integer" }
+    - { key: "filelocking.enabled", value: "true" }
+    - { key: "memcache.locking", value: '\OC\Memcache\Redis' }
+    - { key: "redis host", value: localhost }
+    - { key: "redis port", value: 6379 }
+    - { key: "redis timeout", value: 0 }
+    - { key: "redis password", value: }
+nextcloud_ldap_config:
+    hasMemberOfFilterSupport: 1
+    ldapAgentName: "uid={{ nextcloud_ipa_users.ldap.name }},cn=users,cn=accounts,{{ ldap_base_dn }}"
+    ldapAgentPassword: "{{ nextcloud_ipa_users.ldap.password }}"
+    ldapAttrAddress: ""
+    ldapAttrBiography: ""
+    ldapAttrFediverse: ""
+    ldapAttrHeadline: ""
+    ldapAttrOrganisation: ""
+    ldapAttrPhone: ""
+    ldapAttrRole: ""
+    ldapAttrTwitter: ""
+    ldapAttrWebsite: ""
+    ldapAttributesForGroupSearch: ""
+    ldapAttributesForUserSearch: ""
+    ldapBackgroundHost: ""
+    ldapBackgroundPort: ""
+    ldapBackupHost: ""
+    ldapBackupPort: ""
+    ldapBase: "{{ ldap_base_dn }}"
+    ldapBaseGroups: "{{ ldap_base_dn }}"
+    ldapBaseUsers: "{{ ldap_base_dn }}"
+    ldapCacheTtl: "600"
+    ldapConfigurationActive: 1
+    ldapConnectionTimeout: "15"
+    ldapDefaultPpolicyDn: ""
+    ldapDn: "uid={{ nextcloud_ipa_users.ldap.name }},cn=users,cn=accounts,{{ ldap_base_dn }}"
+    ldapDynamicGroupMemberUrl: ""
+    ldapEmailAttribute: "mail"
+    ldapExperiencedAdmin: "0"
+    ldapExpertUsernameAttr: uid
+    ldapExpertUuidGroupAttr: ""
+    ldapExpertUuidUserAttr: ""
+    ldapExtStorageHomeAttribute: ""
+    ldapGidNumber: "gidNumber"
+    ldapGroupDisplayName: "cn"
+    ldapGroupFilter: ""
+    ldapGroupFilterMode: "0"
+    ldapGroupMemberAssocAttribute: ""
+    ldapGroupfilterGroups: ""
+    ldapGroupfilterObjectclass: ""
+    ldapHost: "{{ ldap_servers | first }}"
+    ldapLoginFilter: "(&(&(|(objectclass=person)))(uid=%uid))"
+    ldapLoginFilterMode: "0"
+    ldapLoginfilterAttributes: ""
+    ldapLoginfilterEmail: "0"
+    ldapLoginfilterUsername: "1"
+    ldapMatchingRule_inChainState: "unknown"
+    ldapNestedGroups: "0"
+    ldapOverrideMainServer: ""
+    ldapPagingSize: "500"
+    ldapPort: 389
+    ldapQuotaAttr: ""
+    ldapQuotaDef: ""
+    ldapTls: "0"
+    ldapTurnOffCertCheck: "0"
+    ldapTurnOnPwdChange: "0"
+    ldapUserAvatarRule: "default"
+    ldapUserDisplayName: displayname
+    ldapUserDisplayName_2: ""
+    ldapUserFilter: "(&(|(objectclass=person)))"
+    ldapUserFilterMode: "0"
+    ldapUserFilterObjectclass: person
+    ldapUserfilterGroups: ""
+
+coolwsd_ssl_dir: /etc/pki/coolwsd
+coolwsd_ssl_cert: "{{ coolwsd_ssl_dir }}/{{ nextcloud_fqdn }}.crt"
+coolwsd_ssl_key: "{{ coolwsd_ssl_dir }}/{{ nextcloud_fqdn }}.key"
+
+coolwsd_config:
+    ssl.cert_file_path: "{{ coolwsd_ssl_cert }}"
+    ssl.key_file_path: "{{ coolwsd_ssl_key }}"
+    ssl.ca_file_path: "/etc/ipa/ca.crt"
+    storage.wopi.host: "{{ nextcloud_fqdn }}"
+    logging.level: information

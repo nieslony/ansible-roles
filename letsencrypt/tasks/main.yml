@@ -126,7 +126,7 @@
 
 - name: "Grant read access to private key"
   acl:
-    path: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/privkey.pem"
+    path: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/privkey.pem"
     entity: "{{ item }}"
     etype: user
     permissions: r
@@ -136,13 +136,50 @@
 - name: "Create symling for private key to {{ letsencrypt_key_dest }}"
   file:
     path: "{{ letsencrypt_key_dest }}"
-    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/privkey.pem"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/privkey.pem"
     state: link
   when: letsencrypt_key_dest is string
 
 - name: "Create symling for certificate to {{ letsencrypt_cert_dest }}"
   file:
     path: "{{ letsencrypt_cert_dest }}"
-    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts[0] }}/cert.pem"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/cert.pem"
     state: link
   when: letsencrypt_cert_dest is string
+
+- name: "Create symling for CA certificate to {{ letsencrypt_cert_dest }}"
+  file:
+    path: "{{ letsencrypt_cert_dest }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/chain.pem"
+    state: link
+  when: letsencrypt_cert_dest is string
+
+- name: "Create symlink for private key to {{ letsencrypt_key_dest }}"
+  file:
+    path: "{{ item }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/privkey.pem"
+    state: link
+  with_items: "{{ letsencrypt_key_dest }}"
+  when:
+    - letsencrypt_key_dest is iterable
+    - letsencrypt_key_dest is not string
+
+- name: "Create symlink for certificate to {{ letsencrypt_cert_dest }}"
+  file:
+    path: "{{ item }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/cert.pem"
+    state: link
+  with_items: "{{ letsencrypt_cert_dest }}"
+  when:
+    - letsencrypt_cert_dest is iterable
+    - letsencrypt_cert_dest is not string
+
+- name: "Create symlink for CA certificate to {{ letsencrypt_cert_dest }}"
+  file:
+    path: "{{ item }}"
+    src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/chain.pem"
+    state: link
+  with_items: "{{ letsencrypt_cert_dest }}"
+  when:
+    - letsencrypt_ca_dest is iterable
+    - letsencrypt_ca_dest is not string

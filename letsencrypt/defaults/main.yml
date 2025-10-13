@@ -3,8 +3,20 @@
 
 letsencrypt_vhosts:
     - "{{ ansible_fqdn }}"
+
+# allowed values:
+#   - production
+#   - staging
 letsencrypt_directory: staging
+
 letsencrypt_acme_email:
 letsencrypt_cert_readers: []
+
+# string or list or empty
 letsencrypt_cert_dest:
+
+# string or list or empty
 letsencrypt_key_dest:
+
+# string or list or empty
+letsencrypt_ca_dest:

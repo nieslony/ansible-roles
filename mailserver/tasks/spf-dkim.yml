@@ -55,7 +55,7 @@
 
 - name: "spf-dkim : Find dkim keys"
   find:
-    paths: /etc/opendkim/keys/{{ mail_domain }}
+    paths: /etc/opendkim/keys/{{ mailserver_mail_domain }}
     patterns: "????????.private"
   register: dkim_keys
 
@@ -70,7 +70,7 @@
         regexp: "{{ tmpl | replace('11112233', '[0-9]+') | replace('*', '\\*') }}"
         line: "{{ tmpl | replace('11112233', cur_date) }}"
       vars:
-        tmpl: "*@{{ mail_domain }}     11112233._domainkey.{{ mail_domain }}"
+        tmpl: "*@{{ mailserver_mail_domain }}     11112233._domainkey.{{ mailserver_mail_domain }}"
       notify: restart_opendkim
 
     - name: "spf-dkim : Specify DKIM private key"
@@ -79,12 +79,12 @@
         regexp: "{{ tmpl | replace('11112233', '[0-9]+') | replace('*', '\\*') }}"
         line: "{{ tmpl | replace('11112233', cur_date) }}"
       vars:
-        tmpl: "11112233._domainkey.{{ mail_domain }}     {{ mail_domain }}:11112233:/etc/opendkim/keys/{{ mail_domain }}/11112233.private"
+        tmpl: "11112233._domainkey.{{ mailserver_mail_domain }}     {{ mailserver_mail_domain }}:11112233:/etc/opendkim/keys/{{ mailserver_mail_domain }}/11112233.private"
 
     - name: "spf-dkim : Trust our domain"
       lineinfile:
         path: /etc/opendkim/TrustedHosts
-        line: ".{{ mail_domain }}"
+        line: ".{{ mailserver_mail_domain }}"
 
     - name: "spf-dkim : Remove garbage from /etc/opendkim/*"
       lineinfile:
@@ -96,13 +96,13 @@
         - KeyTable
         - TrustedHosts
 
-    - name: "spf-dkim : Create key folder /etc/opendkim/keys/{{ mail_domain }}"
+    - name: "spf-dkim : Create key folder /etc/opendkim/keys/{{ mailserver_mail_domain }}"
       file:
-        path: "/etc/opendkim/keys/{{ mail_domain }}"
+        path: "/etc/opendkim/keys/{{ mailserver_mail_domain }}"
         state: directory
 
     - name: "spf-dkim : Create dkim keys"
-      command: "opendkim-genkey -b 2048 -d {{ mail_domain }} -D /etc/opendkim/keys/{{ mail_domain }} -s {{ cur_date }} -v"
+      command: "opendkim-genkey -b 2048 -d {{ mailserver_mail_domain }} -D /etc/opendkim/keys/{{ mailserver_mail_domain }} -s {{ cur_date }} -v"
 
     - name: "spf-dkim : Chown opendkim /etc/opendkim/keys"
       file:
@@ -111,9 +111,9 @@
         group: opendkim
         recurse: yes
 
-    - name: "spf-dkim : Slurp Chown opendkim /etc/opendkim/keys/{{ mail_domain }}/{{ cur_date }}.txt"
+    - name: "spf-dkim : Slurp Chown opendkim /etc/opendkim/keys/{{ mailserver_mail_domain }}/{{ cur_date }}.txt"
       slurp:
-        src: "/etc/opendkim/keys/{{ mail_domain }}/{{ cur_date }}.txt"
+        src: "/etc/opendkim/keys/{{ mailserver_mail_domain }}/{{ cur_date }}.txt"
       register:
         dkim_key_txt
 

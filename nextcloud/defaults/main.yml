@@ -1,0 +1,46 @@
+---
+# defaults file for nextcloud
+nextcloud_release: 32
+
+nextcloud_db_name: nextcloud
+nextcloud_db_user: nextcloud
+nextcloud_db_password: zaeW1aixaeYai3th
+
+nextcloud_admin_user: nc-admin
+nextcloud_admin_displayname: "Nextcloud Administrator"
+nextcloud_admin_password: "AdminPassword.1"
+
+nextcloud_fqdn: "cloud.{{ ansible_domain }}"
+
+nextcloud_require_krb:
+    - '192.168.0.0/16'
+    - '172.16.0.0/12'
+    - '10.0.0.0/24'
+
+nextcloud_install_apps:
+    - announcementcenter
+    - calendar
+    - calendar_resource_management
+    - contacts
+    - cookbook
+    - deck
+    - files_accesscontrol
+    - files_automatedtagging
+    - files_retention
+    - forms
+    - groupfolders
+    - mail
+    - notes
+    - oidc
+    - richdocuments
+    - richdocumentscode
+    - secrets
+    - spreed
+#    - tasks
+    - user_saml
+
+nextcloud_enable_apps:
+    - admin_audit
+    - files_external
+    - twofactor_totp
+    - user_ldap

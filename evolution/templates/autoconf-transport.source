@@ -4,7 +4,7 @@ Revision=1
 [Data Source]
 DisplayName={{ organization }} (${email})
 Enabled=true
-Parent=autoconf
+Parent=autoconf-imap
 
 [Authentication]
 Host={{ evolution_mail_server }}

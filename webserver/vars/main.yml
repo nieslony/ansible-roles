@@ -17,9 +17,22 @@ whoami_packages:
     - python3-mod_wsgi
 whoami_folder: /var/www/whoami
 
+vhost_names: >-
+    {%- set vhn = [] -%}
+    {%- for vh in webserver_vhosts -%}
+        {%- if vh.name is defined -%}
+            {{ vhn.append(vh.name) }}
+        {%- else -%}
+            {{ vhn.append(vh) }}
+        {%- endif -%}
+    {%- endfor -%}
+    {{ vhn }}
+
+vhost_aliases: "{{ vhost_names | difference([ansible_fqdn]) }}"
+
 vhosts_internal: >-
     {%- set hosts = [] -%}
-    {%- for vh in webserver_vhosts -%}
+    {%- for vh in vhost_names -%}
     {%- for dom in ipa_dns_domains -%}
         {%- if vh.endswith("." + dom) -%}
         {{ hosts.append(vh) }}
@@ -27,9 +40,10 @@ vhosts_internal: >-
     {%- endfor -%}
     {%- endfor -%}
     {{ hosts }}
+
 vhosts_external:   >-
     {% set hosts = [] %}
-    {%- for vh in webserver_vhosts -%}
+    {%- for vh in vhost_names -%}
     {%- if (query('community.dns.lookup', vh, server='8.8.8.8') | length) > 0 -%}
         {{ hosts.append(vh) }}
     {%- endif -%}
