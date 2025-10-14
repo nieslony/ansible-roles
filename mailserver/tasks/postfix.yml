@@ -1,6 +1,6 @@
 - name: "postfix : Configure postfix"
   command: "postconf -e '{{ item.key }} = {{ item.value | join(', ') if item.value is not string else item.value }}'"
-  loop: "{{ postfix_main_cfg_opts | dict2items }}"
+  with_dict: "{{ postfix_main_cfg_opts }}"
   changed_when: false
 
 - name: "postfix : Enable submission service"

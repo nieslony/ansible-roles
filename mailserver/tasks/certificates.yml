@@ -1,16 +1,5 @@
 - set_fact:
-    postfix_certs_folder: /etc/pki/postfix
-    cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
-    webserver_certs_folder: /etc/pki/httpd
-
-- set_fact:
     ca_cert_file: /etc/ipa/ca.crt
-    postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
-    postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
-    cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
-    cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
-    webserver_cert_file: "{{ webserver_certs_folder }}/{{ myhostname }}.crt"
-    webserver_cert_key_file: "{{ webserver_certs_folder }}/{{ myhostname }}.key"
 
 - name: "certificates : Create certificates folder"
   file:

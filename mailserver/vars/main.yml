@@ -7,6 +7,17 @@ logical_volumes:
   - { name: "var_lib_imap",   create: yes, size: "2G", mount_point: /var/lib/imap }
   - { name: "var_lib_mysql",  create: yes, size: "4G", mount_point: /var/lib/mysql }
 
+postfix_certs_folder: /etc/pki/postfix
+cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
+webserver_certs_folder: /etc/pki/httpd
+
+postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
+postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
+cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
+cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
+webserver_cert_file: "{{ webserver_certs_folder }}/{{ myhostname }}.crt"
+webserver_cert_key_file: "{{ webserver_certs_folder }}/{{ myhostname }}.key"
+
 postfix_master_cfg_opts:
     submission_inet:
         syslog_name: "postfix/submission"
