@@ -2,4 +2,5 @@
 mailserver_mail_domain: "{{ maildomain | default(ansible_domain) }}"
 
 mailserver_fqdn: "{{ ansible_fqdn }}"
-mailserver_autodiscover_fqdn: "autodiscover.{{ mailserver_mail_domain }}"
+mailserver_autodiscover_fqdn: "{{ mailserver_autodiscover_fqdn | default('autodiscover.' + mailserver_mail_domain }}"
+mailserver_autoconfig_fqdn: "{{ mailserver_autoconfig_fqdn | default('autoconfig.' + mailserver_mail_domain }}"

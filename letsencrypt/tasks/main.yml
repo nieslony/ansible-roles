@@ -75,7 +75,7 @@
     - http
     - https
 
-- name: "Create certificates from {{ acme_directory }}"
+- name: "Create certificates for {{ letsencrypt_vhosts | join(', ') }} from {{ acme_directory }}"
   command:
     cmd: >-
       certbot
