@@ -1,7 +1,7 @@
 ---
 # vars file for nextcloud
 logical_volumes:
-  - name: "var_www_html_{{ mail_cloud_fqdn}}_nextcloud_data"
+  - name: "var_www_html_{{ nextcloud_fqdn}}_nextcloud_data"
     size: "10G"
     mount_point: "{{ nextcloud_folder }}/data"
     create: yes
@@ -56,7 +56,7 @@ packages_nextcloud:
     - yum-utils
     - python3-jmespath
 
-nextcloud_folder: "/var/www/html/{{ mail_cloud_fqdn }}/nextcloud"
+nextcloud_folder: "/var/www/html/{{ nextcloud_fqdn }}/nextcloud"
 nextcloud_occ: "{{ nextcloud_folder }}/occ"
 
 nextcloud_user_saml_config:
@@ -77,8 +77,8 @@ nextcloud_ipa_users:
       givenname: Nextcloud
       sn: LDAP
 nextcloud_system_config:
-    - { key: "trusted_domains 1", value: "{{ mail_cloud_fqdn }}" }
-    - { key: "overwrite.cli.url", value: "https://{{ mail_cloud_fqdn }}/nextcloud" }
+    - { key: "trusted_domains 1", value: "{{ nextcloud_fqdn }}" }
+    - { key: "overwrite.cli.url", value: "https://{{ nextcloud_fqdn }}/nextcloud" }
     # - "memcache.local --value='\\OC\\Memcache\\APCu' --type=string"
     - { key: "memcache.local", value: '\OC\Memcache\APCu' }
     - { key: "default_phone_region", value: "AT" }
