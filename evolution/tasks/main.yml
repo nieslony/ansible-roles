@@ -69,6 +69,7 @@
   template:
     src: create-nextcloud-folders.sh
     dest: /etc/skel/.bashrc.d
+  notify: recreate_create_nextcloud_folders
 
 - name: Install evolution-autoconf.sh
   copy:
