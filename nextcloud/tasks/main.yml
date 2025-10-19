@@ -68,6 +68,8 @@
   changed_when: no
 
 - name: "Create email users {{ nextcloud_ipa_users.keys() | list }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
   freeipa.ansible_freeipa.ipauser:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "{{ item.value.name }}"
@@ -240,10 +242,10 @@
     job: "php -f {{ nextcloud_folder }}/cron.php"
     minute: "*/5"
 
-- name: "Update .htaccess"
-  copy:
-    src: nextcloud_htaccess
-    dest: "{{ nextcloud_folder }}/.htaccess"
+#- name: "Update .htaccess"
+#  copy:
+#    src: nextcloud_htaccess
+#    dest: "{{ nextcloud_folder }}/.htaccess"
 
 - name: "create symlink ocm-provider"
   file:
