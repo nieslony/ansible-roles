@@ -79,7 +79,7 @@
   command:
     cmd: >-
       certbot
-      run
+      certonly
       --apache
       {% for vh in letsencrypt_vhosts -%}
       --domain {{ vh }}
@@ -147,12 +147,12 @@
     state: link
   when: letsencrypt_cert_dest is string
 
-- name: "Create symling for CA certificate to {{ letsencrypt_cert_dest }}"
+- name: "Create symling for CA certificate to {{ letsencrypt_ca_dest }}"
   file:
-    path: "{{ letsencrypt_cert_dest }}"
+    path: "{{ letsencrypt_ca_dest }}"
     src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/chain.pem"
     state: link
-  when: letsencrypt_cert_dest is string
+  when: letsencrypt_ca_dest is string
 
 - name: "Create symlink for private key to {{ letsencrypt_key_dest }}"
   file:
@@ -174,12 +174,12 @@
     - letsencrypt_cert_dest is iterable
     - letsencrypt_cert_dest is not string
 
-- name: "Create symlink for CA certificate to {{ letsencrypt_cert_dest }}"
+- name: "Create symlink for CA certificate to {{ letsencrypt_ca_dest }}"
   file:
     path: "{{ item }}"
     src: "/etc/letsencrypt/live/{{ letsencrypt_vhosts | first }}/chain.pem"
     state: link
-  with_items: "{{ letsencrypt_cert_dest }}"
+  with_items: "{{ letsencrypt_ca_dest }}"
   when:
     - letsencrypt_ca_dest is iterable
     - letsencrypt_ca_dest is not string
