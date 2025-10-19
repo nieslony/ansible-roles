@@ -64,6 +64,6 @@
         - "{{ postfix_cert_file }}"
       letsencrypt_key_dest:
         - /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
-        - "{{ postfix_key_file }}"
+        - "{{ postfix_cert_key_file }}"
       letsencrypt_ca_dest: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
   when: mailserver_fqdn != ansible_fqdn
