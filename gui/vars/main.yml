@@ -79,6 +79,7 @@ gui_extra_themes:
 gui_extra_themes_exclude:
     - "*devel"
     - "mingw*"
+    - "*papirus*"  
 
 gui_rpm_packages_centos: "{{ gui_rpm_extra_packages_centos + gui_rpm_packages }}"
 gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages }}"
