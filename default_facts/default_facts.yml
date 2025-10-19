@@ -10,7 +10,7 @@
             awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'
         );
     do
-        if ping -c1 -t1 $i > /dev/null
+        if ping -c1 -w1 $i > /dev/null
             then echo $i
         fi
     done
@@ -22,7 +22,7 @@
     for ip in $(
         host ipa-ca.{{ ansible_domain }} | awk '/has address/ { print $NF; }'
     ); do
-        if ping -c1 -t1 $ip > /dev/null ; then
+        if ping -c1 -w1 $ip > /dev/null ; then
             host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
             break
         fi
