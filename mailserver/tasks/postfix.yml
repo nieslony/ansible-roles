@@ -22,6 +22,18 @@
     name: "smtp/{{ ansible_fqdn }}"
   environment: "{{ env_ipa_on_host }}"
 
+- name: "postfix : Create service alias smtp/{{ mailserver_fqdn }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
+  ipaservice:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    name: "smtp/{{ ansible_fqdn }}"
+    principal: "smtp/{{ mailserver_fqdn }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+  when: mailserver_fqdn != ansible_fqdn
+
 - name: "postfix : Get keytab for smtp"
   block:
     - name: "postfix : Get kerberos credentials"
