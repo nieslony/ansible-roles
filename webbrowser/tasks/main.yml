@@ -59,6 +59,9 @@
                         "URL": webbrowser_homepage,
                         "StartPage": "homepage"
                     },
+                    "Authentication": {
+                      "SPNEGO": webbrowser_delegation_uris | map('regex_replace', '$\.', '') | list
+                    },
                     "DisplayBookmarksToolbar": true,
                     "NoDefaultBookmarks": true,
                     "EnableTrackingProtection": {
