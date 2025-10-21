@@ -174,6 +174,13 @@
   environment: "{{ env_ipa_on_host }}"
   notify: restart_httpd
 
+- name: "Symlink internal CA"
+  file:
+    path: "/etc/pki/tls/certs/{{ item }}_ca.crt"
+    src: /etc/ipa/ca.crt
+    state: link
+  with_items: "{{ vhosts_internal }}"
+
 - name: "Get external SSL certificates for webserver"
   include_role:
     name: letsencrypt
