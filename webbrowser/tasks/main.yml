@@ -60,7 +60,7 @@
                         "StartPage": "homepage"
                     },
                     "Authentication": {
-                      "SPNEGO": webbrowser_delegation_uris | map('regex_replace', '$\.', '') | list
+                      "SPNEGO": webbrowser_trusted_uris | map('regex_replace', '$\*?\.', '') | list
                     },
                     "DisplayBookmarksToolbar": true,
                     "NoDefaultBookmarks": true,
