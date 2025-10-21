@@ -57,8 +57,23 @@
   ipaservice:
     name: "{{ item }}/{{ ansible_fqdn }}"
   environment: "{{ env_ipa_on_host }}"
-  loop:
+  with_items:
     - imap
+    - sieve
+
+- name: "cyrus-imapd : Create service alias (smtp|sieve)/{{ mailserver_fqdn }}"
+  vars:
+    ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
+  ipaservice:
+    ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
+    name: "{{ item }}/{{ ansible_fqdn }}"
+    principal: "{{ item }}/{{ mailserver_fqdn }}"
+  delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
+  become: no
+  environment: "{{ env_ipa_on_server }}"
+  when: mailserver_fqdn != ansible_fqdn
+  with_items:
+    - imap  
     - sieve
 
 - name: "cyrus-imapd : Get keytab for imap"
