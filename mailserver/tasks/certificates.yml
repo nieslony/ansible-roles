@@ -23,6 +23,12 @@
       creates: "{{ postfix_cert_file }}"
     environment: "{{ env_ipa_on_host }}"
 
+  - name: "certificates : Symlink IPA'a ca file to {{ postfix_ca_cert_file }}"    
+    file:
+      path: "{{ postfix_ca_cert_file }}"
+      src: /etc/ipa/ca.crt
+      state: link  
+
   - name: "certificates : Get internal SSL certificate for cyrus-imap"
     command:
       cmd: |
@@ -65,5 +71,7 @@
       letsencrypt_key_dest:
         - /etc/pki/cyrus-imapd/cyrus-imapd-key.pem
         - "{{ postfix_cert_key_file }}"
-      letsencrypt_ca_dest: /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+      letsencrypt_ca_dest: 
+        - /etc/pki/cyrus-imapd/cyrus-imapd-ca.pem
+        - "{{ postfix_ca_cert_file }}"
   when: mailserver_fqdn != ansible_fqdn

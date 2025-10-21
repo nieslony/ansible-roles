@@ -12,6 +12,7 @@ cyrus_imapd_certs_folder: /etc/pki/cyrus-imapd
 webserver_certs_folder: /etc/pki/httpd
 
 postfix_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}.crt"
+postfix_ca_cert_file: "{{ postfix_certs_folder }}/{{ myhostname }}_ca.crt"
 postfix_cert_key_file: "{{ postfix_certs_folder }}/{{ myhostname }}.key"
 cyrus_imapd_cert_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.crt"
 cyrus_imapd_cert_key_file: "{{ cyrus_imapd_certs_folder }}/{{ myhostname }}.key"
@@ -43,6 +44,7 @@ postfix_main_cfg_opts:
       - "ldap:/etc/postfix/virtual_ldap"
     smtpd_tls_cert_file: "{{ postfix_cert_file }}"
     smtpd_tls_key_file: "{{ postfix_cert_key_file }}"
+    smtpd_tls_CAfile: "{{ postfix_ca_cert_file }}"
 
 packages_common:
     - cyrus-sasl

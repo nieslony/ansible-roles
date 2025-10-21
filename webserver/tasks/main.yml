@@ -180,6 +180,7 @@
   vars:
     letsencrypt_key_dest: "/etc/pki/tls/private/{{ item }}.key"
     letsencrypt_cert_dest: "/etc/pki/tls/certs/{{ item }}.crt"
+    letsencrypt_ca_dest: "/etc/pki/tls/certs/{{ item }}_ca.crt"
     letsencrypt_vhosts:
       - "{{ item }}"
   with_items: "{{ vhosts_external }}"
@@ -194,6 +195,7 @@
   vars:
     ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
     ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
+    ssl_ca_cert_file: "/etc/pki/tls/certs/{{ item }}_ca.crt"  
   template:
     src: vhost.conf
     dest: "/etc/httpd/conf.d/{{ item }}.conf"
