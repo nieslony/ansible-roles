@@ -1,4 +1,6 @@
 # tasks file for zzz-finished
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
 
 - name: "Find /etc/issue.d/please-wait.issue"
   stat:
@@ -10,3 +12,9 @@
     msg: If yes, show message when finished
   changed_when: stat_please_wait.stat.exists
   notify: show_success_message
+
+- name: "Install kerberos config for extra domains {{ ipa_external_domains | join(', ') }}"
+  template:
+    src: external_domains
+    path: /etc/krb5.conf.d/external_domains
+  when: ipa_external_domains | length > 0

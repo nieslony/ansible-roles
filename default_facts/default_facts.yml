@@ -121,6 +121,26 @@
   set_fact:
     krb5_realm: "{{ read_krb5_conf.stdout }}"
 
+- name: "Find IPA services"
+  shell:
+    cmd: "ipa service-find --raw | awk '/krbprincipalname/ { print $2; }' | sort"
+  changed_when: no
+  register: find_ipa_services
+  environment: "{{ env_ipa_on_host }}"
+
+- name: "Set IPA external domains"
+  set_fact:
+    ipa_external_domains: |-
+      {%- set domains = [] -%}
+      {%- for service in find_ipa_services.stdout_lines -%}
+        {%- set host = service | regex_replace('^.*/(.*)@.*$', '\\1') -%}
+        {%- set domain = (host | split('.'))[1:] | join('.') -%}
+        {%- if domain not in ipa_dns_domains -%}
+          {{ domains.append(domain) }}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ domains | sort | unique }}
+
 - name: "Set automount variables"
   set_fact:
     automount_location: "{{ freeipa_automount_location | default('default') }}"
@@ -140,6 +160,7 @@
     - organization
     - is_realmproxy
     - ipa_dns_domains
+    - ipa_external_domains
     - krb5_realm
     - realm_keytab
     - system_volume_group
