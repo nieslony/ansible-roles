@@ -1,5 +1,5 @@
 [domain_realm]
 {% for dom in ipa_external_domains %}
-.{{ dom }} = krb5_realm
-{{ dom }} = krb5_realm
+.{{ dom }} = {{ krb5_realm }}
+{{ dom }} = {{ krb5_realm }}
 {% endfor %}
