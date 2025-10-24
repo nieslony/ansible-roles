@@ -1,0 +1,17 @@
+[Unit]
+After=network.target mysqld.service httpd.service redis.service
+Description = Push daemon for Nextcloud clients
+Documentation = https://github.com/nextcloud/notify_push
+
+[Service]
+# Change if you already have something running on this port
+Environment = PORT=7867
+ExecStart = {{ nextcloud_folder }}/apps/notify_push/bin/x86_64/notify_push {{ nextcloud_folder }}/config/config.php
+# requires the push server to have been build with the systemd feature (enabled by default)
+Type = notify
+User = apache
+Restart = always
+RestartSec = 60
+
+[Install]
+WantedBy = multi-user.target

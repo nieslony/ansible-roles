@@ -27,3 +27,9 @@
     name: coolwsd
     state: restarted
   listen: restart_coolwsd
+
+- name: Restart notify_push
+  service:
+    name: notify_push
+    state: restarted
+  listen: restart_notify_push

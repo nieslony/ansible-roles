@@ -10,7 +10,7 @@ mailserver_mail_domain: "{{ maildomain | default(ansible_domain) }}"
 
 php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
 
-php_remi_release: "8.3"
+php_remi_release: "8.4"
 
 packages_nextcloud:
     - CODE-brand

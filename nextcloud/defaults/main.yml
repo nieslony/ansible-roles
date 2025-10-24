@@ -31,6 +31,7 @@ nextcloud_install_apps:
     - groupfolders
     - mail
     - notes
+    - notify_push
     - oidc
     - richdocuments
     - richdocumentscode
@@ -38,6 +39,7 @@ nextcloud_install_apps:
     - spreed
     - tasks
     - user_saml
+    - whiteboard
 
 nextcloud_enable_apps:
     - admin_audit

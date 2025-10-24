@@ -201,7 +201,29 @@
     path: "{{ nextcloud_occ }}"
     mode: 0755
 
+- name: "Symlink occ to /usr/local/bin"
+  file:
+    src: "{{ nextcloud_occ }}"
+    dest: /usr/local/bin/occ
+    state: link
+
 - name: "copy apache config"
+  vars:
+    auth_whitelist:
+      - /.well-known/.*
+      - /apps/settings/js/esm-test.mjs
+      - /apps/settings/js/map-test.js.map
+      - /apps/spreed/js/tflite.wasm
+      - /apps/theming/fonts/.*
+      - /core/fonts/NotoSans-Regular-latin.woff2
+      - /data/.ncdata
+      - /index.php/.well-known/(nodeinfo|webfinger)
+      - /index.php/apps/notify_push/test/cookie
+      - /index.php/heartbeat
+      - /index.php/ocm-provider
+      - /ocs-provider/
+      - /push/test/cookie
+      - /push/test/reverse_cookie
   template:
     src: nextcloud.conf
     dest: /etc/httpd/conf.d/{{ nextcloud_fqdn }}.conf.inc
@@ -222,17 +244,6 @@
             --admin-pass={{ nextcloud_admin_password }}
             --data-dir={{ nextcloud_folder }}/data
     creates: "{{ nextcloud_folder }}/config/config.php"
-
-- name: "Add missing indices"
-  command:
-    cmd: "{{ nextcloud_occ }} db:add-missing-indices"
-  register: ret_add_missing_indices
-  changed_when: ret_add_missing_indices.stdout | length > 0
-
-- name: "Repair"
-  command:
-    cmd: "{{ nextcloud_occ }} maintenance:repair --include-expensive"
-  changed_when: no
 
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "config system"
@@ -257,12 +268,12 @@
 #  copy:
 #    src: nextcloud_htaccess
 #    dest: "{{ nextcloud_folder }}/.htaccess"
-
-- name: "create symlink ocm-provider"
-  file:
-    path: "{{ nextcloud_folder }}/ocm-provider"
-    src: "{{ nextcloud_folder }}/ocs-provider"
-    state: link
+#
+# - name: "create symlink ocm-provider"
+#   file:
+#     path: "{{ nextcloud_folder }}/ocm-provider"
+#     src: "{{ nextcloud_folder }}/ocs-provider"
+#     state: link
 
 - name: "Get admin's display name"
   become: yes
@@ -304,7 +315,7 @@
     file_type: directory
   register: installed_apps
 
-- name: "get installed apps"
+- name: "Get installed apps"
   set_fact:
     installed_apps: >-
         {{
@@ -373,10 +384,31 @@
     or
     current_ldap_config.s01[item.key] != item.value
 
+- name: "Add missing indices"
+  command:
+    cmd: "{{ nextcloud_occ }} db:add-missing-indices"
+  register: ret_add_missing_indices
+  changed_when: ret_add_missing_indices.stdout | length > 0
+
+- name: "Repair"
+  command:
+    cmd: "{{ nextcloud_occ }} maintenance:repair --include-expensive"
+  changed_when: no
+
 - name: "Test app user_ldap"
   become: yes
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:test-config s01"
+
+- name: "Setup notify_push"
+  command:
+    cmd: "{{ nextcloud_occ }} notify_push:setup https://{{ nextcloud_fqdn }}/nextcloud/push"
+
+- name: "Install notify_notes.service"
+  template:
+    src: notify_push.service
+    dest:  /usr/lib/systemd/system
+  notify: restart_notify_push
 
 - name: "Install fail2ban filter"
   copy:
