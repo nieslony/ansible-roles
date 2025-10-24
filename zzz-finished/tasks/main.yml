@@ -16,5 +16,5 @@
 - name: "Install kerberos config for extra domains {{ ipa_external_domains | join(', ') }}"
   template:
     src: external_domains
-    path: /etc/krb5.conf.d/external_domains
+    dest: /etc/krb5.conf.d/external_domains
   when: ipa_external_domains | length > 0
