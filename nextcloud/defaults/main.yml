@@ -36,7 +36,7 @@ nextcloud_install_apps:
     - richdocumentscode
     - secrets
     - spreed
-#    - tasks
+    - tasks
     - user_saml
 
 nextcloud_enable_apps:
