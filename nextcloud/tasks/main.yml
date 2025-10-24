@@ -223,6 +223,17 @@
             --data-dir={{ nextcloud_folder }}/data
     creates: "{{ nextcloud_folder }}/config/config.php"
 
+- name: "Add missing indices"
+  command:
+    cmd: "{{ nextcloud_occ }} db:add-missing-indices"
+  register: ret_add_missing_indices
+  changed_when: ret_add_missing_indices.stdout | length > 0
+
+- name: "Repair"
+  command:
+    cmd: "{{ nextcloud_occ }} maintenance:repair --include-expensive"
+  changed_when: no
+
 # see https://blog.effenberger.org/2018/07/09/nextcloud-installation-via-command-line/
 - name: "config system"
   become: yes
