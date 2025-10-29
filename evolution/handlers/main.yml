@@ -3,7 +3,8 @@
 # handlers file for evolution
 - name: "Get users' home folders"
   shell:
-    cmd: "getent passwd $( last | awk '/:0/ { print $1; }' | sort -u ) | awk -F: '($3 >= 1000) { print $6; }'"
+    cmd: >-
+      getent passwd --service=sss $( last | awk '/:0/ { print $1; }' | sort -u ) | awk -F: '($3 >= 1000) { print $6; }'
   register: get_active_users    
   listen: recreate_create_nextcloud_folders
 
@@ -14,4 +15,3 @@
     remote_src: true
   with_items: "{{ get_active_users.stdout_lines }}" 
   listen: recreate_create_nextcloud_folders
-
