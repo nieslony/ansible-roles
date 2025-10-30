@@ -39,7 +39,7 @@ nextcloud_install_apps:
     - spreed
     - tasks
     - user_saml
-    - whiteboard
+#    - whiteboard
 
 nextcloud_enable_apps:
     - admin_audit

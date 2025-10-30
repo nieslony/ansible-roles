@@ -406,15 +406,28 @@
   become_user: apache
   command: "{{ nextcloud_occ }} ldap:test-config s01"
 
-- name: "Setup notify_push"
-  command:
-    cmd: "{{ nextcloud_occ }} notify_push:setup https://{{ nextcloud_fqdn }}/nextcloud/push"
-
 - name: "Install notify_notes.service"
   template:
     src: notify_push.service
     dest:  /usr/lib/systemd/system
   notify: restart_notify_push
+
+- name: "Copy notify_push to /usre/local/bin"
+  copy:
+    src: "{{ nextcloud_folder }}/apps/notify_push/bin/x86_64/notify_push"
+    dest: /usr/local/bin
+    remote_src: true
+    mode: 0755
+
+- name: "Start notify_push.service"
+  service:
+    name: notify_push
+    state: started
+    enabled: yes
+
+- name: "Setup notify_push"
+  command:
+    cmd: "{{ nextcloud_occ }} notify_push:setup https://{{ nextcloud_fqdn }}/nextcloud/push"
 
 - name: "Install fail2ban filter"
   copy:
