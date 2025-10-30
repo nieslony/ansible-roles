@@ -227,7 +227,13 @@
   template:
     src: nextcloud.conf
     dest: /etc/httpd/conf.d/{{ nextcloud_fqdn }}.conf.inc
-  notify: restart_httpd
+  register: copy_apache_config
+
+- name: "Restart apache"
+  service:
+    name: httpd
+    state: restarted
+  when: copy_apache_config is changed
 
 - name: "Setup nextcloud with occ"
   become: yes
