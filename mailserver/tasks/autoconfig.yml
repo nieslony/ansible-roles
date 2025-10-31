@@ -20,7 +20,7 @@
 - name: "autoconfig : Install apache config"
   template:
     src: autoconfig.conf
-    dest: "/etc/httpd/conf.d/autoconfig.{{ ansible_domain }}.conf"
+    dest: "/etc/httpd/conf.d/{{ mailserver_autoconfig_fqdn }}.conf.inc.d"
   notify: restart_httpd
 
 - name: "autoconfig : Install webapp"
@@ -34,3 +34,9 @@
     src: autoconfig.ini
     dest: /var/www/autoconfig
   notify: restart_httpd
+
+- name: "autoconfig : allow httpd_can_connect_ldap"
+  seboolean:
+    name: httpd_can_connect_ldap
+    state: yes
+    persistent: yes
