@@ -124,9 +124,32 @@
   become: no
   environment: "{{ env_ipa_on_server }}"
 
+- name: "Find existing service HTTP/{{ ansible_fqdn }}"
+  shell:
+    cmd: |-
+      ipa service-show HTTP/{{ ansible_fqdn }} --raw |
+      awk '/krbprincipalname/ {
+        print $2;
+      }'
+  changed_when: no
+  register: find_existing_service
+  environment: "{{ env_ipa_on_host }}"
+
+- debug:
+    var: find_existing_service
+
 - name: "Build additional service principal"
   set_fact:
-    service_princs: "{{ vhost_aliases | difference([ansible_fqdn]) | map('regex_replace', '^', 'HTTP/') }}"
+    service_princs: |-
+      {{ vhost_aliases
+          | map('regex_replace', '^', 'HTTP/')
+          | map('regex_replace', '$', '@' + krb5_realm)
+          | union(find_existing_service.stdout_lines)
+          | difference([ "HTTP/" + ansible_fqdn + "@" + krb5_realm])
+      }}
+
+- debug:
+    var: service_princs
 
 - name: "Create service HTTP/{{ ansible_fqdn }} with additional service principals {{ service_princs }}"
   vars:
@@ -134,10 +157,17 @@
   ipaservice:
     ipaadmin_password: "{{ ipaadmin_password | default(omit) }}"
     name: "HTTP/{{ ansible_fqdn }}"
-    principal: "{{ (service_princs | length > 0) | ternary(service_princs, omit) }}"
+    krbprincipalname: "{{ (service_princs | length > 0) | ternary(service_princs, omit) }}"
   delegate_to: "{{ (ipaadmin_password is not defined) | ternary('127.0.0.1', omit) }}"
   become: no
   environment: "{{ env_ipa_on_server }}"
+  register: create_additional_principals
+
+- name: "Remove existing keytab /etc/httpd/krb5.keytab because of changes"
+  file:
+    path: /etc/httpd/krb5.keytab
+    state: absent
+  when: create_additional_principals is changed
 
 - name: "Get keytab"
   shell:
@@ -202,7 +232,7 @@
   vars:
     ssl_key_file: "/etc/pki/tls/private/{{ item }}.key"
     ssl_cert_file: "/etc/pki/tls/certs/{{ item }}.crt"
-    ssl_ca_cert_file: "/etc/pki/tls/certs/{{ item }}_ca.crt"  
+    ssl_ca_cert_file: "/etc/pki/tls/certs/{{ item }}_ca.crt"
   template:
     src: vhost.conf
     dest: "/etc/httpd/conf.d/{{ item }}.conf"
@@ -425,13 +455,6 @@
     failed_when: add_princible_result.rc > 1
     register: add_princible_result
     environment: "{{ env_ipa_on_server }}"
-
-      # - name: "Add HTTP/{{ ansible_fqdn }} to rule {{ webserver_constrained_delegation_rule }}"
-      #   ipaservicedelegationrule:
-      #     ipaadmin_password: "{{ ipaadmin_password }}"
-      #     name: "{{ webserver_constrained_delegation_rule }}"
-      #     # principal: "HTTP/{{ ansible_fqdn }}"
-      #     action: member
   when: webserver_constrained_delegation_enabled
 
 - name: Enable and start services
