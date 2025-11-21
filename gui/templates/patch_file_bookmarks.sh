@@ -208,9 +208,16 @@ function create_bookmarks {
         /file:.* .*/ {
             next;
         }
-        $0 != "" { print; }
+        !/^\s*$/ { print; }
         END {
-            print bookmarks;
+            n = split(bookmarks, bm, "\\n");
+            for (i=0; i<=n; i++) {
+                gsub(/^\s*/, "", bm[i]);
+                gsub(/\s*$/, "", bm[i]);
+                if (length(bm[i]) > 0) {
+                    print bm[i];
+                }
+            }
         }
     ' > "$TMP_FILE"
 
@@ -218,7 +225,7 @@ function create_bookmarks {
 
     #
     #
-    {% for bookmark in file_bookmarks %}
+    {% for bookmark in file_bookmarks -%}
     if [ -e "{{ bookmark.url[7:] }}/.smb-preexec-hint" ]; then
         share=$( cat "{{ bookmark.url[7:] }}/.smb-preexec-hint" | awk '/^\/\/[a-z]/ { print $0; }' )
         smbclient --use-kerberos=required "$share" -c quit || has_errors="yes"
