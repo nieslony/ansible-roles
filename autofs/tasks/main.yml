@@ -11,8 +11,11 @@
                 | regex_search('ipa_automount_location *= *(.*)', multiline=True)
         }}
 
-- debug:
-    var: sssd_automount_location
+
+- name: "Install packages {{ packages | join(', ') }}"
+  dnf:
+    name: "{{ packages }}"
+    state: latest
 
 - name: "Configure automount from IPA"
   command:
