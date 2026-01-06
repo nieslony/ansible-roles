@@ -21,15 +21,13 @@
         lv: "{{ item.path[1:] | replace('/', '_') }}"
         size: "{{ item.size }}"
         shrink: false
-    loop:
-        "{{ fileserver_exports }}"
+    loop: "{{ fileserver_exports }}"
 
   - name: "Create filesystems"
     filesystem:
         fstype: xfs
         dev: "/dev/{{ system_volume_group }}/{{ item.path[1:] | replace('/', '_') }}"
-    loop:
-        "{{ fileserver_exports }}"
+    loop: "{{ fileserver_exports }}"
 
   - name: "Mount filesystems"
     mount:
@@ -37,8 +35,7 @@
         src: "/dev/{{ system_volume_group }}/{{ item.path[1:] | replace('/', '_') }}"
         fstype: xfs
         state: mounted
-    loop:
-        "{{ fileserver_exports }}"
+    loop: "{{ fileserver_exports }}"
   when: system_volume_group is defined
 
 - name: "Create groups"
