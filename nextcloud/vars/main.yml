@@ -8,9 +8,11 @@ logical_volumes:
 
 mailserver_mail_domain: "{{ maildomain | default(ansible_domain) }}"
 
-php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-9.rpm"
+php_remi_repo: "https://rpms.remirepo.net/enterprise/remi-release-{{ ansible_distribution_major_version }}.rpm"
 
-php_remi_release: "8.4"
+#php_remi_release: "84"
+php_release: 84
+mysql_server: 8.4
 
 packages_nextcloud:
     - CODE-brand
@@ -20,33 +22,33 @@ packages_nextcloud:
     - curl
     - httpd
     - httpd-tools
-    - mlocate
+    # - mlocate
     - mod_auth_gssapi
     - mod_session
     - mod_ssl
-    - mysql-server
-    - php-bcmath
-    - php-bz2
-    - php-cli
-    - php-common
-    - php-curl
-    - php-fpm
-    - php-gd
-    - php-gmp
-    - php-imagick
-    - php-intl
-    - php-json
-    - php-ldap
-    - php-mbstring
-    - php-mysqlnd
-    - php-opcache
-    - php-pecl-apcu
-    - php-pecl-redis
-    - php-process
-    - php-smbclient
-    - php-sodium
-    - php-xml
-    - php-zip
+    - "mysql{{ mysql_server}}-server"
+    - "php{{ php_release }}-php-bcmath"
+    - "php{{ php_release }}-php-bz2"
+    - "php{{ php_release }}-php-cli"
+    - "php{{ php_release }}-php-common"
+    - "php{{ php_release }}-php-curl"
+    - "php{{ php_release }}-php-fpm"
+    - "php{{ php_release }}-php-gd"
+    - "php{{ php_release }}-php-gmp"
+    - "php{{ php_release }}-php-imagick"
+    - "php{{ php_release }}-php-intl"
+    - "php{{ php_release }}-php-json"
+    - "php{{ php_release }}-php-ldap"
+    - "php{{ php_release }}-php-mbstring"
+    - "php{{ php_release }}-php-mysqlnd"
+    - "php{{ php_release }}-php-opcache"
+    - "php{{ php_release }}-php-pecl-apcu"
+    - "php{{ php_release }}-php-pecl-redis"
+    - "php{{ php_release }}-php-process"
+    - "php{{ php_release }}-php-smbclient"
+    - "php{{ php_release }}-php-sodium"
+    - "php{{ php_release }}-php-xml"
+    - "php{{ php_release }}-php-zip"
     - policycoreutils-python-utils
     - python3-lxml
     - python3-mysqlclient

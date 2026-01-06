@@ -148,9 +148,6 @@
           | difference([ "HTTP/" + ansible_fqdn + "@" + krb5_realm])
       }}
 
-- debug:
-    var: service_princs
-
 - name: "Create service HTTP/{{ ansible_fqdn }} with additional service principals {{ service_princs }}"
   vars:
     ansible_python_interpreter: "{{ is_realmproxy | ternary('/usr/bin/python3.9', '/usr/bin/python3') }}"
@@ -163,22 +160,41 @@
   environment: "{{ env_ipa_on_server }}"
   register: create_additional_principals
 
-- name: "Remove existing keytab /etc/httpd/krb5.keytab because of changes"
-  file:
-    path: /etc/httpd/krb5.keytab
-    state: absent
-  when: create_additional_principals is changed
+# - name: "Remove existing keytab /etc/httpd/krb5.keytab because of changes"
+#   file:
+#     path: /etc/httpd/krb5.keytab
+#     state: absent
+#   when: create_additional_principals is changed
+
+- name: "Get keytab"
+  vars:
+    vhost_extension: "{{ '' if item == ansible_fqdn else '_' + item }}"
+  shell:
+    cmd: |
+        kinit -k || exit 1
+        ipa-getkeytab -p HTTP/{{ item }} -k /etc/httpd/krb5{{ vhost_extension }}.keytab
+    creates: "/etc/httpd/krb5{{ vhost_extension }}.keytab"
+  with_items: "{{ vhost_aliases }}"
 
 - name: "Get keytab"
   shell:
     cmd: |
         kinit -k || exit 1
         ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/httpd/krb5.keytab
-    creates: /etc/httpd/krb5.keytab
+    creates: "/etc/httpd/krb5.keytab"
+
+- name: "Chown keytab"
+  vars:
+    vhost_extension: "{{ '' if item == ansible_fqdn else '_' + item }}"
+  file:
+    path: "/etc/httpd/krb5.keytab"
+    owner: apache
+    mode: 0600
+  with_items: "{{ vhost_aliases }}"
 
 - name: "Chown keytab"
   file:
-    path: /etc/httpd/krb5.keytab
+    path: "/etc/httpd/krb5.keytab"
     owner: apache
     mode: 0600
 

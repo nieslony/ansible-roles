@@ -32,7 +32,7 @@ nextcloud_install_apps:
     - mail
     - notes
     - notify_push
-    - oidc
+#    - oidc
     - richdocuments
     - richdocumentscode
     - secrets

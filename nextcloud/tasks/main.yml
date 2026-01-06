@@ -28,15 +28,15 @@
       description: "Collabora Online Development Edition"
   when: foreman['organization'] is not defined
 
-- name: "Find remi module"
-  shell: 'dnf module list --enabled | grep -q "php *remi-{{ php_remi_release }}"'
-  register: find_remi_module
-  changed_when: no
-  ignore_errors: yes
-
-- name: "Install php remi {{ php_remi_release }}"
-  command: "dnf -y module enable php:remi-{{ php_remi_release }}"
-  when: find_remi_module.rc != 0
+# - name: "Find remi module"
+#   shell: 'dnf module list --enabled | grep -q "php *remi-{{ php_remi_release }}"'
+#   register: find_remi_module
+#   changed_when: no
+#   ignore_errors: yes
+#
+# - name: "Install php remi {{ php_remi_release }}"
+#   command: "dnf -y module enable php:remi-{{ php_remi_release }}"
+#   when: find_remi_module.rc != 0
 
 - name: "Install packages {{ packages_nextcloud | join(', ') }}"
   dnf:
@@ -172,10 +172,10 @@
     enabled: yes
     state: started
   loop:
-    - mysqld
-    - php-fpm
-    - redis
-    - coolwsd
+    - "mysqld"
+    - "php{{ php_release }}-php-fpm"
+    - "valkey"
+    - "coolwsd"
 
 - name: "Set some selinux booleans => On"
   seboolean:
@@ -190,11 +190,26 @@
   mysql_db:
     name: "{{ nextcloud_db_name }}"
 
+- name: "Enable mysql_native_password plugin"
+  ini_file:
+    path: /etc/my.cnf
+    section: mysqld
+    option: mysql_native_password
+    value: ON
+  register: enable_mysql_native_password_plugin
+
+- name: restart mysqld
+  service:
+    name: mysqld
+    state: restarted
+  when: enable_mysql_native_password_plugin is changed
+
 - name: "Create DB user"
   mysql_user:
     name: "{{ nextcloud_db_user }}"
     priv: "nextcloud.*:ALL"
-    password: "{{ nextcloud_db_password }}"
+    encrypted: yes
+    password: "{{ nextcloud_db_password | hash('sha256') }}"
 
 - name: "Make occ executable"
   file:
@@ -219,6 +234,7 @@
       - /data/.ncdata
       - /index.php/.well-known/(nodeinfo|webfinger)
       - /index.php/apps/notify_push/test/cookie
+      - /index.php/apps/notify_push/test/remote
       - /index.php/heartbeat
       - /index.php/ocm-provider
       - /ocs-provider/
@@ -412,7 +428,7 @@
     dest:  /usr/lib/systemd/system
   notify: restart_notify_push
 
-- name: "Copy notify_push to /usre/local/bin"
+- name: "Copy notify_push to /usr/local/bin"
   copy:
     src: "{{ nextcloud_folder }}/apps/notify_push/bin/x86_64/notify_push"
     dest: /usr/local/bin
@@ -425,9 +441,32 @@
     state: started
     enabled: yes
 
+- name: "Create temp entry in /etc/hosts"
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ ansible_default_ipv4.address }} {{ nextcloud_fqdn }}"
+    regexp: '^\s*{{ ansible_default_ipv4.address }}.*\s{{ nextcloud_fqdn }}($|\s)'
+  register: add_etc_hosts
+  #when: query('community.dns.lookup', nextcloud_fqdn, type='A') | length == 0
+
+- debug:
+    msg: "Found DNS entry for: {{ nextcloud_fqdn }}: {{ query('community.dns.lookup', nextcloud_fqdn, type='A') }}"
+  when: query('community.dns.lookup', nextcloud_fqdn, type='A') | length >= 0
+
 - name: "Setup notify_push"
-  command:
-    cmd: "{{ nextcloud_occ }} notify_push:setup https://{{ nextcloud_fqdn }}/nextcloud/push"
+  shell:
+    cmd: >-
+      {{ nextcloud_occ }} notify_push:setup https://{{ nextcloud_fqdn }}/nextcloud/push
+      &&
+      touch {{ nextcloud_folder }}/apps/notify_push/setup_completed
+    creates: "{{ nextcloud_folder }}/apps/notify_push/setup_completed"
+
+- name: "Remove line from /etc/hosts"
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ ansible_default_ipv4.address }} {{ nextcloud_fqdn }}"
+    state: absent
+  when: add_etc_hosts is changed
 
 - name: "Install fail2ban filter"
   copy:
