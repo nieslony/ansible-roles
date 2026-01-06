@@ -2,12 +2,20 @@
 - name: Import facts
   import_tasks: "../../default_facts/default_facts.yml"
 
-- name: Install evolution
+- name: "Install evolution (RedHat)"
   dnf:
     name:
         - evolution
         - openldap-clients
     state: latest
+  when:  ansible_os_family == "RedHat"
+
+
+- name: "Install evolution (Debian)"
+  apt:
+    name: evolution
+  when:  ansible_os_family == "Debian"
+
 
 - name: Create folder /usr/local/etc/evolution
   file:

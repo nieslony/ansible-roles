@@ -1,3 +1,4 @@
 packages:
+    - autofs
     - cifs-utils
     - nfs4-acl-tools

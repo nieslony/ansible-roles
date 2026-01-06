@@ -1,2 +1,11 @@
 
 install_chrome_repo: "{{ not foreman is defined }}"
+
+firefox_root: >-
+  {%- if ansible_facts.os_family == "Debian" -%}
+  /usr/lib/firefox-esr
+  {%- elif ansible_facts.os_family == "RedHat" -%}
+  /usr/lib64/firefox
+  {%- else -%}
+  /not/found
+  {%- endif -%}
