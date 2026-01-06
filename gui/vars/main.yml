@@ -70,6 +70,10 @@ gui_rpm_packages:
   - vlc
   - vulkan-loader
   - xmlstarlet
+  - kf5-kwallet
+  - pam-kwallet
+  - kwalletmanager5
+
 
 gui_extra_themes:
     - "*cursor-theme*"
@@ -88,7 +92,7 @@ gui_deb_packages:
   - gnome-session
   - gdm3
   - kde-plasma-desktop
-  - kde-standard
+  - kde-full
 
 exclude_packages:
   - libvirt-daemon

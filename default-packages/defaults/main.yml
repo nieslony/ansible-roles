@@ -1,5 +1,5 @@
 # defaults file for default-packages
-default_packages:
+default_packages_redhat:
     - bash-completion
     - bind-utils
     - cronie
@@ -25,6 +25,22 @@ default_packages:
     - pciutils
     - rsync
     - tar
+    - telnet
+    - tmux
+    - usbutils
+
+default_packages_debian:
+    - firewalld
+    - libldap-common
+    - ldap-utils
+    - locales-all
+    - lvm2
+    - lsof
+    - lsscsi
+    - mailutils
+    - postfix
+    - net-tools
+    - rsync
     - telnet
     - tmux
     - usbutils

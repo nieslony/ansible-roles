@@ -79,16 +79,25 @@
       name:
         - rpmfusion-free-release-tainted
         - rpmfusion-nonfree-release-tainted
+    when: ansible_distribution == "Fedora"
   when: not foreman['content_view'] is defined
 
-- name: Disable external repositories
-  include_role:
-    name: 01-no-external-repositories
+- block:
+  - name: Disable external repositories
+    include_role:
+      name: 01-no-external-repositories
 
-- name: Install updates
-  dnf:
-    name: "*"
-    state: latest
+  - name: Install updates
+    dnf:
+      name: "*"
+      state: latest
+  when: ansible_facts.os_family == "RedHat"
+
+- block:
+  - name: "Install updates"
+    apt:
+      upgrade: safe
+  when: ansible_facts.os_family == "Debian"
 
 - name: Disable external repositories
   include_role:
@@ -113,6 +122,11 @@
     nobest: true
     skip_broken: true
   when: ansible_distribution == "Fedora"
+
+- name: "Install Debian packages: {{ gui_deb_packages | sort | join(', ') }}"
+  apt:
+    name: "{{ gui_deb_packages }}"
+    install_recommends: yes
 
 - name: "Check diskspace on /"
   shell: "df / --output=avail --block-size=G | tr -d ' G' | tail -1"
@@ -143,21 +157,14 @@
     name: "{{ remove_packages }}"
     state: absent
     disable_excludes: yes
-
-- name: Install kwallet
-  dnf:
-    name:
-        - kf5-kwallet
-        - kwalletmanager5
-        - pam-kwallet
-    state: present
+  when: ansible_facts.os_family == "RedHat"
 
 - name: Enable pam_kwallet
   lineinfile:
     path: /etc/pam.d/gdm-password
     line: "{{ item }}"
     regexp: "^[# ]*{{ item | regex_replace(' +', ' +') }}.*$"
-  loop:
+  with_items:
     - "-auth       optional      pam_kwallet5.so"
     - "-auth       optional      pam_kwallet.so"
     - "-session    optional      pam_kwallet5.so auto_start"
@@ -355,6 +362,35 @@
     user: root
     job: /usr/local/bin/update-gdm-faces.sh
     cron_file: update-gdm-faces
+
+- block:
+  - name: "Enable allow_polyinstantiation"
+    seboolean:
+      name: allow_polyinstantiation
+      state: true
+      persistent: yes
+
+  - name: "Create instance prefixes"
+    file:
+      path: "{{ item.instance_prefix  }}"
+      state: directory
+      mode: 0000
+    with_items: "{{ gui_namespace_dirs }}"
+
+  - name: "Restore selinux context"
+    command:
+      cmd: "restorecon -Rv {{ item.instance_prefix }}"
+    with_items: "{{ gui_namespace_dirs }}"
+    register: restorecon_namespace
+    changed_when: restorecon_namespace.stdout | length > 0
+
+  - name: "Enable namespace"
+    lineinfile:
+      path: /etc/security/namespace.conf
+      regex: "^{{ item.polydir }}\\s"
+      line: "{{ '%-15s' | format(item.polydir) }} {{ '%-23s' | format(item.instance_prefix) }} level      root,adm,vagrant,gdm"
+    with_items: "{{ gui_namespace_dirs }}"
+  when: gui_namespace_dirs | type_debug == "list"
 
 - name: Find /boot/luks.pwd
   stat:

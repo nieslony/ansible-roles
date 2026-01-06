@@ -8,3 +8,8 @@ gui_file_bookmarks: []
 #  - name: "Videos on Fileserver"
 #    url: "file:///data/videos"
 #    icon: "folder-remote"
+gui_namespace_dirs:
+    # - polydir: /tmp
+    #   instance_prefix: /tmp-inst/
+    # - polydir: /var/tmp
+    #   instance_prefix: /var/tmp/tmp-inst/

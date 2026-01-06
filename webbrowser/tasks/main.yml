@@ -8,45 +8,52 @@
         {{ webbrowser_managed_bookmarks + [{ "toplevel_name": organization }] }}
 
 - block:
-    - name: Install firefox
-      dnf:
-        name: firefox
+    - name: "Install firefox"
+      package:
+        package: firefox
         state: latest
+      when: ansible_facts.os_family == "RedHat"
 
-    - name: Find /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+    - name: "Install firefox ESR"
+      package:
+        name: firefox-esr
+        state: latest
+      when: ansible_facts.os_family == "Debian"
+
+    - name: "Find {{ firefox_root }}/browser/defaults/preferences/all-ipa.js"
       stat:
-        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+        path: "{{ firefox_root }}/browser/defaults/preferences/all-ipa.js"
       register: find_all_ipa
       changed_when: false
 
-    - name: Set uris trusted for negotiate
+    - name: "Set uris trusted for negotiate"
       lineinfile:
-        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+        path: "{{ firefox_root }}/browser/defaults/preferences/all-ipa.js"
         line: |
             pref("network.negotiate-auth.trusted-uris", "{{ webbrowser_trusted_uris | map('regex_replace', '^\\*', '') | join(', ') }}");
         regex: |
             ^pref\("network.negotiate-auth.trusted-uris".*
       when: find_all_ipa.stat.exists
 
-    - name: Set uris trusted for delegation
+    - name: "Set uris trusted for delegation"
       lineinfile:
-        path: /usr/lib64/firefox/browser/defaults/preferences/all-ipa.js
+        path: "{{ firefox_root }}/browser/defaults/preferences/all-ipa.js"
         line: |
             pref("network.negotiate-auth.delegation-uris", "{{ webbrowser_delegation_uris | join(', ') }}");
         regex: |
             ^pref\("network.negotiate-auth.delegation-uris".*
       when: find_all_ipa.stat.exists
 
-    - name: Create policies.json
+    - name: "Create policies.json"
       copy:
-        dest: /usr/lib64/firefox/distribution/policies.json
+        dest: "{{ firefox_root }}/distribution/policies.json"
         force: false
         content: |
             {}
 
-    - name: Read policies.json
+    - name: "Read policies.json"
       slurp:
-        src: /usr/lib64/firefox/distribution/policies.json
+        src: "{{ firefox_root }}/distribution/policies.json"
       register: policies_json
 
     - name: Parse and combine policies.json
@@ -75,31 +82,45 @@
                 }, recursive=True)
             }}
 
-    - name: Write policies.json
+    - name: "Write policies.json"
       copy:
-        dest: /usr/lib64/firefox/distribution/policies.json
+        dest: "{{ firefox_root }}/distribution/policies.json"
         content: "{{ firefox_policies | to_nice_json }}"
   when: webbrowser_enable_firefox
 
 - block:
-  - name: Find google-chrome.repo
-    stat:
-      path: /etc/yum.repos.d/backup/google-chrome.repo
-    register: stat_chrome_repo
-    changed_when: false
+  - block:
+    - name: "Find google-chrome.repo"
+      stat:
+        path: /etc/yum.repos.d/backup/google-chrome.repo
+      register: stat_chrome_repo
+      changed_when: false
 
-  - name: Install Google Chrome Repo
-    dnf:
-      use_backend: dnf4
-      name: https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
-      state: present
-      disable_gpg_check: true
-    when: install_chrome_repo and not stat_chrome_repo.stat.exists
+    - name: "Install Google Chrome Repo"
+      dnf:
+        use_backend: dnf4
+        name: https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm
+        state: present
+        disable_gpg_check: true
+      when: install_chrome_repo and not stat_chrome_repo.stat.exists
 
-  - name: Install Google Chrome
-    dnf:
-      name: google-chrome-stable
-      state: latest
+    - name: "Install Google Chrome"
+      package:
+        name: google-chrome-stable
+        state: latest
+    when: ansible_facts.os_family == "RedHat"
+
+  - block:
+    - name: "Add Google Chrome repo"
+      copy:
+        src: google-chrome.list
+        dest: /etc/apt/sources.list.d/google-chrome.list
+
+    - name: "Intall Google Chrome"
+      apt:
+        name: google-chrome-stable
+        update_cache: yes
+    when: ansible_facts.os_family == "Debian"
 
   - name: Create Policy folders
     file:
