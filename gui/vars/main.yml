@@ -74,7 +74,6 @@ gui_rpm_packages:
   - pam-kwallet
   - kwalletmanager5
 
-
 gui_extra_themes:
     - "*cursor-theme*"
     - "*gtk*-theme*"
@@ -83,16 +82,24 @@ gui_extra_themes:
 gui_extra_themes_exclude:
     - "*devel"
     - "mingw*"
-    - "*papirus*"  
+    - "*papirus*"
 
 gui_rpm_packages_centos: "{{ gui_rpm_extra_packages_centos + gui_rpm_packages }}"
 gui_rpm_packages_fedora: "{{ gui_rpm_extra_packages_fedora + gui_rpm_packages }}"
 
 gui_deb_packages:
+  - cdrskin
+  - cheese
+  - digikam
+  - flac
+  - joe
+  - k3b
   - gnome-session
   - gdm3
   - kde-plasma-desktop
   - kde-full
+  - lastlog2
+  - vlc
 
 exclude_packages:
   - libvirt-daemon
