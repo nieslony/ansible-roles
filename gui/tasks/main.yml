@@ -127,6 +127,7 @@
   apt:
     name: "{{ gui_deb_packages }}"
     install_recommends: yes
+  when: ansible_distribution == "Debian"
 
 - name: "Check diskspace on /"
   shell: "df / --output=avail --block-size=G | tr -d ' G' | tail -1"
