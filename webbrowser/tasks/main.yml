@@ -156,14 +156,8 @@
       src: /etc/ipa/ca.crt
     register: ipa_ca_crt
 
-  - debug:
-      msg: "{{ ipa_ca_crt.content | b64decode }}"
-
   - set_fact:
       ipa_ca_content: "{{ (ipa_ca_crt.content | b64decode | split('\n'))[1:-2] | join }}"
-
-  - debug:
-      var: ipa_ca_content
 
   - name: Parse and combine managed_policies.json
     set_fact:
