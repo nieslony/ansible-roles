@@ -77,7 +77,11 @@
                         "Cryptomining": true,
                         "Fingerprinting": true
                     },
-                    "ManagedBookmarks": managed_bookmarks
+                    "ManagedBookmarks": managed_bookmarks,
+                    "Certificates": {
+                        "ImportEnterpriseRoots": true,
+                        "Install": [ "/etc/ipa/ca.crt" ]
+                    },
                 }
                 }, recursive=True)
             }}
@@ -111,12 +115,18 @@
     when: ansible_facts.os_family == "RedHat"
 
   - block:
-    - name: "Add Google Chrome repo"
-      copy:
-        src: google-chrome.list
-        dest: /etc/apt/sources.list.d/google-chrome.list
+    - name: "Install APT key for Google Chrome"
+      ansible.builtin.get_url:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        dest: /etc/apt/trusted.gpg.d/google.asc
 
-    - name: "Intall Google Chrome"
+    - name: "Add Google Chrome repo"
+      ansible.builtin.apt_repository:
+        repo: deb http://dl.google.com/linux/chrome/deb/ stable main
+        state: present
+        filename: google-chrome
+
+    - name: "Install Google Chrome"
       apt:
         name: google-chrome-stable
         update_cache: yes
@@ -141,6 +151,20 @@
       src: /etc/opt/chrome/policies/managed/managed_policies.json
     register: managed_policies_json
 
+  - name: "Load /etc/ipa/ca.crt"
+    slurp:
+      src: /etc/ipa/ca.crt
+    register: ipa_ca_crt
+
+  - debug:
+      msg: "{{ ipa_ca_crt.content | b64decode }}"
+
+  - set_fact:
+      ipa_ca_content: "{{ (ipa_ca_crt.content | b64decode | split('\n'))[1:-2] | join }}"
+
+  - debug:
+      var: ipa_ca_content
+
   - name: Parse and combine managed_policies.json
     set_fact:
       chrome_policies: |
@@ -151,7 +175,8 @@
                     "KerberosEnabled": true,
                     "EnableAuthNegotiatePort": true,
                     "AuthServerAllowlist": webbrowser_trusted_uris | map('regex_replace', '^\.', '*.')  | join(', '),
-                    "ManagedBookmarks": managed_bookmarks
+                    "ManagedBookmarks": managed_bookmarks,
+                    "CACertificates": [ ipa_ca_content ]
                 }, recursive=True)
             }}
 
