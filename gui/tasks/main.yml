@@ -346,7 +346,7 @@
 - name: "Create update-gdm-faces.sh"
   copy:
     content: |
-      for i in $( last --since yesterday | awk '/login/ { print $1; }' | sort -u ) ; do
+      for i in $( lastlog2 | awk '{ print$1; }' | sort -u ) ; do
         FACE=$( eval echo ~$i/.face.icon )
         if [ -e "$FACE" ]; then
           cp -v $FACE /var/lib/AccountsService/icons/$i.jpg
