@@ -1,4 +1,7 @@
 # tasks file for autofs
+- name: Import facts
+  import_tasks: "../../default_facts/default_facts.yml"
+
 - name: "Find automount location"
   slurp:
     src: /etc/sssd/sssd.conf
@@ -17,7 +20,7 @@
     name: "{{ packages }}"
     state: latest
 
-- name: "Configure automount from IPA"
+- name: "Configure automount location \"{{ automount_location | default('') }}\" from IPA"
   command:
     cmd: "ipa-client-automount --location={{ automount_location }} --unattended"
   when:
@@ -27,7 +30,7 @@
   register: ipa_client_automount
   failed_when: ipa_client_automount.rc not in [0,3]
 
-- name: "autofs: Configure autofs.conf"
+- name: "Configure autofs.conf"
   ini_file:
     path: /etc/autofs.conf
     section: " autofs "
@@ -36,7 +39,7 @@
   with_dict: "{{ autofs_options }}"
   notify: restart_autofs
 
-- name: "autofs: Start and enable autofs"
+- name: "Start and enable autofs"
   service:
     name: autofs
     enabled: yes
