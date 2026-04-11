@@ -90,12 +90,14 @@
 - name: "Find ipa domains"
   shell:
     cmd: |
-        kinit -k
-        ipa dnszone-find --raw |
-            awk -F ": *" '
-                /idnsname/ { gsub(/\.$/, "", $2); if (! /.in-addr.arpa/) print $2; }
-            '
-        kdestroy
+        if [ -n "$( which ipa )" ]; then
+          kinit -k
+          ipa dnszone-find --raw |
+              awk -F ": *" '
+                  /idnsname/ { gsub(/\.$/, "", $2); if (! /.in-addr.arpa/) print $2; }
+              '
+          kdestroy
+        fi
   register: ipa_domains_ret
   changed_when: false
 
