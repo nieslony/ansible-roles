@@ -182,25 +182,25 @@
   changed_when: false
   register: systemdefault
 
-- name: Enable display manager
-  command: systemctl set-default graphical.target
-  when: "'graphical' not in systemdefault.stdout"
-
-- name: "Get sddm status"
+- name: "Get display-manager status"
   systemd:
-    name: "sddm.service"
-  register: sddm_status
+    name: "display-manager.service"
+  register: display_manager_status
 
-- name: Disable sddm
+- name: "Disable current display-manager {{ display_manager_status.status.Id }}"
   service:
-    name: sddm
+    name: display-manager
     enabled: no
-  when: sddm_status.status.ExecStart is defined
+  when: display_manager_status.status.Id != "gdm.service"
 
 - name: Enable gdm
   service:
     name: gdm
     enabled: yes
+
+- name: Enable display manager
+  command: systemctl set-default graphical.target
+  when: "'graphical' not in systemdefault.stdout"
 
 - name: "Set default session: create /etc/accountsservice/user-templates"
   file:
