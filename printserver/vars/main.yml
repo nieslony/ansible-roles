@@ -19,13 +19,13 @@ cupsd_options:
     - key: DefaultEncryption
       value: 'required'
     - key: ServerName
-      value: "{{ ansible_fqdn }}"
+      value: "{{ ansible_facts.fqdn }}"
     - key: ServerAlias
-      value: "{{ ansible_fqdn }}"
+      value: "{{ ansible_facts.fqdn }}"
 
 certs_folder: /etc/pki/cups
-ssl_cert: "{{ certs_folder }}/{{ ansible_fqdn }}.crt"
-ssl_key: "{{ certs_folder }}/{{ ansible_fqdn }}.key"
+ssl_cert: "{{ certs_folder }}/{{ ansible_facts.fqdn }}.crt"
+ssl_key: "{{ certs_folder }}/{{ ansible_facts.fqdn }}.key"
 
 locations:
     - name: "/"

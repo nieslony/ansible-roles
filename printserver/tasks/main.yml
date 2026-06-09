@@ -7,12 +7,12 @@
 
 - name: "Create services on {{ ipa_server }}"
   ipaservice:
-    name: "{{ item }}/{{ ansible_fqdn }}"
+    name: "{{ item }}/{{ ansible_facts.fqdn }}"
   loop:
     - HTTP
   environment: "{{ env_ipa_on_host }}"
 
-- name: "Find HTTP/{{ ansible_fqdn }} in /etc/krb5.keytab"
+- name: "Find HTTP/{{ ansible_facts.fqdn }} in /etc/krb5.keytab"
   shell:
     cmd: >
         echo -e "rkt /etc/krb5.keytab\nlist\n"
@@ -31,7 +31,7 @@
 
     - name: "Get keytab"
       command:
-        cmd: "ipa-getkeytab -p HTTP/{{ ansible_fqdn }} -k /etc/krb5.keytab"
+        cmd: "ipa-getkeytab -p HTTP/{{ ansible_facts.fqdn }} -k /etc/krb5.keytab"
       notify: restart_cups
   always:
     - name: Destroy credential cache
@@ -71,19 +71,18 @@
     path: /etc/cups/cupsd.conf
   register: cuspd_conf_content
 
-- set_fact:
+- name: "Decode content of cupsd.conf"
+  set_fact:
     cupsd_conf_content_new: "{{ cuspd_conf_content.content | b64decode }}"
 
-- name: "Set AuthType for locations"
-  set_fact:
-    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
+- name: "Set AuthType {{ locations | join(', ') }}"
   vars:
     search: "<Location {{ item.name }}>\n(\\s*[A-Za-z].*\n)*</Location>"
     location: "{{ cupsd_conf_content_new | regex_search(search, multiline=True) }}"
     found_auth_type: "{{ location | regex_search(' *AuthType\\s.*\n', multiline=True) }}"
     location_new: >-
         {{
-            (found_auth_type != "")
+            (found_auth_type is string and found_auth_type | length > 0)
             | ternary(
                 (location
                     | regex_replace(
@@ -99,20 +98,19 @@
                 )
             )
         }}
-    found_allow: "{{ location | regex_search(' *Allow\\s.*\n', multiline=True) }}"
+  set_fact:
+    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
   loop: "{{ locations }}"
   changed_when: location != location_new
 
 - name: "Set Allow for locations"
-  set_fact:
-    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
   vars:
     search: "<Location {{ item.name }}>\n(\\s*[A-Za-z].*\n)*</Location>"
     location: "{{ cupsd_conf_content_new | regex_search(search, multiline=True) }}"
     found_allow: "{{ location | regex_search(' *Allow\\s.*\n', multiline=True) }}"
     location_new: >-
             {{
-                (found_allow != "")
+                (found_allow is string and found_allow | length > 0)
                 | ternary(
                     (location
                         | regex_replace(found_allow, '  Allow ' + item.allow + '\n')
@@ -125,6 +123,8 @@
                     )
                 )
             }}
+  set_fact:
+    cupsd_conf_content_new: "{{ cupsd_conf_content_new | regex_replace(location, location_new) }}"
   loop: "{{ locations }}"
   changed_when: location != location_new
 

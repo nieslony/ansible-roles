@@ -1,12 +1,12 @@
-- name: "DNS lookup {{ ansible_domain }}/MX"
-  shell: "host -t mx {{ ansible_domain }} | tail -1 | awk '{ print substr($NF, 1, length($NF)-1); }'"
+- name: "DNS lookup {{ ansible_facts.domain }}/MX"
+  shell: "host -t mx {{ ansible_facts.domain }} | tail -1 | awk '{ print substr($NF, 1, length($NF)-1); }'"
   register: mx_record
   changed_when: no
 
-- name: "DNS lookup _ldap._tcp.{{ ansible_domain }}/SRV"
+- name: "DNS lookup _ldap._tcp.{{ ansible_facts.domain }}/SRV"
   shell: |
     for i in $(
-        host -t srv _ldap._tcp.{{ ansible_domain }} |
+        host -t srv _ldap._tcp.{{ ansible_facts.domain }} |
             awk '/has SRV record/ { print substr($NF, 1, length($NF)-1); }'
         );
     do
@@ -17,10 +17,10 @@
   register: ldap_record
   changed_when: no
 
-- name: "DNS lookup ipa-ca.{{ ansible_domain }}"
+- name: "DNS lookup ipa-ca.{{ ansible_facts.domain }}"
   shell: >-
     for ip in $(
-        host ipa-ca.{{ ansible_domain }} | awk '/has address/ { print $NF; }'
+        host ipa-ca.{{ ansible_facts.domain }} | awk '/has address/ { print $NF; }'
     ); do
         if ping -c1 -w1 $ip > /dev/null ; then
             host $ip | awk '{ print substr($NF, 1, length($NF)-1); }'
@@ -35,7 +35,7 @@
     mail_server: "{{ mail_server if mail_server is defined else mx_record.stdout }}"
     ipa_server: "{{ ipa_server | default(ipa_server_record.stdout) }}"
     ldap_servers: "{{ ldap_servers if ldap_servers is defined else ldap_record.stdout_lines | sort }}"
-    organization: "{{ foreman['organization'] if foreman is defined else ansible_domain }}"
+    organization: "{{ foreman['organization'] if foreman is defined else ansible_facts.domain }}"
 
     ldap_base_dn: >-
         {%-
@@ -44,7 +44,7 @@
                 or ldap_base_dn == ''
         -%}
             {{
-                ansible_domain.split('.') |
+                ansible_facts.domain.split('.') |
                     map('regex_replace', '^', 'dc=') |
                     list |
                     join(',')
@@ -55,10 +55,10 @@
 
 - name: Find name of system volume group
   set_fact:
-    system_volume_group: "{{ (ansible_lvm.vgs | dict2items | first).key }}"
+    system_volume_group: "{{ (ansible_facts.lvm.vgs | dict2items | first).key }}"
   when:
-   - ansible_lvm.vgs is defined
-   - ansible_lvm.vgs | length > 0
+   - ansible_facts.lvm.vgs is defined
+   - ansible_facts.lvm.vgs | length > 0
 
 - set_fact:
     realm_keytab: /etc/foreman-proxy/freeipa.keytab
